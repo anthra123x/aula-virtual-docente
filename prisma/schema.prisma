@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+enum ObservationType {
+  ACADEMIC
+  BEHAVIOR
+}
+
+enum ClassStatus {
+  PLANNED
+  DONE
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses       Course[]
+  observations  Observation[]
+  periods       AcademicPeriod[]
+
+  @@map("users")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String   @default("#3B82F6")
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups Group[]
+
+  @@index([userId])
+  @@map("courses")
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  grade     String?
+  courseId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students      Student[]
+  classSessions ClassSession[]
+
+  @@index([courseId])
+  @@map("groups")
+}
+
+model Student {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  groupId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group             Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendanceRecords AttendanceRecord[]
+  observations      Observation[]
+
+  @@index([groupId])
+  @@index([firstName, lastName])
+  @@map("students")
+}
+
+model ClassSession {
+  id        String      @id @default(cuid())
+  date      DateTime
+  startTime String?
+  endTime   String?
+  topic     String
+  status    ClassStatus @default(PLANNED)
+  groupId   String
+  periodId  String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  group             Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  period            AcademicPeriod?     @relation(fields: [periodId], references: [id])
+  lessonPlan        LessonPlan?
+  attendanceRecords AttendanceRecord[]
+
+  @@index([groupId])
+  @@index([date])
+  @@index([periodId])
+  @@map("class_sessions")
+}
+
+model LessonPlan {
+  id             String  @id @default(cuid())
+  objectives     String?
+  activities     String?
+  resources      String?
+  homework       String?
+  classSessionId String  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+
+  @@map("lesson_plans")
+}
+
+model AttendanceRecord {
+  id             String           @id @default(cuid())
+  studentId      String
+  classSessionId String
+  status         AttendanceStatus @default(PRESENT)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classSessionId])
+  @@index([classSessionId])
+  @@index([studentId])
+  @@map("attendance_records")
+}
+
+model Observation {
+  id          String           @id @default(cuid())
+  description String
+  type        ObservationType  @default(ACADEMIC)
+  studentId   String
+  userId      String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([studentId])
+  @@index([userId])
+  @@map("observations")
+}
+
+model AcademicPeriod {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  year      Int
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classSessions ClassSession[]
+
+  @@index([userId, year])
+  @@map("academic_periods")
+}
