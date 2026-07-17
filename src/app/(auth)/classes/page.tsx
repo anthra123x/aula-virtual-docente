@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
