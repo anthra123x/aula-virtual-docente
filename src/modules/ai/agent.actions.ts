@@ -14,22 +14,23 @@ export async function chatWithAgent(
 
   const systemPrompt = `Eres "AulaBot", un asistente docente integrado en AulaDocente.
 
-CAPACIDADES:
-- Puedes CONSULTAR información del sistema (cursos, grupos, estudiantes, clases)
-- Puedes CREAR clases completas con plan de clase (objetivos, actividades, recursos, tarea)
-- Puedes GENERAR planes de clase usando IA
-- Respondes preguntas sobre metodología y pedagogía
+CAPACIDADES COMPLETAS:
+- CRUD completo de cursos, grupos, estudiantes, clases, observaciones y períodos académicos
+- Consultar información del sistema (cursos, grupos, estudiantes, clases, observaciones)
+- Generar y crear planes de clase usando IA
+- Responder preguntas sobre metodología y pedagogía
 - Todo en español, tono cercano y profesional
 
 Para realizar acciones en el sistema, usa las herramientas disponibles.
-Cuando crees una clase, asegúrate de tener el groupId correcto.
-El usuario debe aprobar antes de crear cualquier registro.
+Siempre confirma con el usuario antes de crear o modificar datos, mostrando un resumen de lo que se va a hacer.
+Cuando el usuario te pida crear algo, primero consulta los datos necesarios (cursos existentes, grupos, etc.)
+y luego procede con la confirmación.
+Si no tienes suficiente información para actuar, pregunta al usuario.
 
 REGLAS:
-- No inventes datos ni IDs
-- Si no tienes suficiente información para actuar, pregunta al usuario
-- Para generar un plan de clase, usa generateLessonPlan y luego createClass con esos datos
-- Confirma siempre antes de crear o modificar datos`
+- No inventes datos ni IDs — siempre consulta primero
+- Para crear una clase con plan, usa generateLessonPlan y luego createClass con los datos generados
+- Después de crear un registro, informa al usuario qué se creó y los detalles relevantes`
 
   const tools = {
     listCourses: tool({
@@ -173,10 +174,189 @@ REGLAS:
         return students
       },
     }),
+
+    listClasses: tool({
+      description: 'Lista las clases de un grupo',
+      inputSchema: z.object({
+        groupId: z.string().describe('ID del grupo'),
+      }),
+      execute: async ({ groupId }) => {
+        const classes = await prisma.classSession.findMany({
+          where: { groupId, group: { course: { userId: user.id } } },
+          orderBy: { date: 'desc' },
+          take: 20,
+          select: { id: true, date: true, topic: true, status: true },
+        })
+        return classes
+      },
+    }),
+
+    listObservations: tool({
+      description: 'Lista las observaciones de un estudiante',
+      inputSchema: z.object({
+        studentId: z.string().describe('ID del estudiante'),
+      }),
+      execute: async ({ studentId }) => {
+        const obs = await prisma.observation.findMany({
+          where: { studentId, student: { group: { course: { userId: user.id } } } },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, description: true, type: true, createdAt: true },
+        })
+        return obs
+      },
+    }),
+
+    createCourse: tool({
+      description: 'Crea una nueva materia/curso. Requiere nombre.',
+      inputSchema: z.object({
+        name: z.string().describe('Nombre del curso/materia'),
+        description: z.string().optional().describe('Descripción opcional'),
+        color: z.string().optional().describe('Color hexadecimal (ej: #3B82F6)'),
+      }),
+      execute: async ({ name, description, color }) => {
+        const course = await prisma.course.create({
+          data: { name, description: description || null, color: color || '#3B82F6', userId: user.id },
+          select: { id: true, name: true, description: true, color: true },
+        })
+        return course
+      },
+    }),
+
+    createGroup: tool({
+      description: 'Crea un nuevo grupo dentro de un curso',
+      inputSchema: z.object({
+        courseId: z.string().describe('ID del curso al que pertenece'),
+        name: z.string().describe('Nombre del grupo (ej: 10-E)'),
+        grade: z.string().optional().describe('Grado o nivel'),
+      }),
+      execute: async ({ courseId, name, grade }) => {
+        const course = await prisma.course.findFirst({
+          where: { id: courseId, userId: user.id },
+          select: { id: true },
+        })
+        if (!course) throw new Error('Materia no encontrada o no tienes acceso')
+
+        const group = await prisma.group.create({
+          data: { name, grade: grade || null, courseId },
+          select: { id: true, name: true, grade: true, courseId: true },
+        })
+        return group
+      },
+    }),
+
+    createStudent: tool({
+      description: 'Crea un nuevo estudiante en un grupo',
+      inputSchema: z.object({
+        groupId: z.string().describe('ID del grupo'),
+        firstName: z.string().describe('Nombre del estudiante'),
+        lastName: z.string().describe('Apellido del estudiante'),
+        email: z.string().optional().describe('Email del estudiante'),
+        phone: z.string().optional().describe('Teléfono del estudiante'),
+      }),
+      execute: async ({ groupId, firstName, lastName, email, phone }) => {
+        const group = await prisma.group.findFirst({
+          where: { id: groupId, course: { userId: user.id } },
+          select: { id: true },
+        })
+        if (!group) throw new Error('Grupo no encontrado o no tienes acceso')
+
+        const student = await prisma.student.create({
+          data: { firstName, lastName, email: email || null, phone: phone || null, groupId },
+          select: { id: true, firstName: true, lastName: true, email: true },
+        })
+        return student
+      },
+    }),
+
+    createObservation: tool({
+      description: 'Crea una observación para un estudiante',
+      inputSchema: z.object({
+        studentId: z.string().describe('ID del estudiante'),
+        description: z.string().describe('Descripción de la observación'),
+        type: z.enum(['ACADEMIC', 'BEHAVIOR']).optional().describe('Tipo: ACADEMIC o BEHAVIOR'),
+      }),
+      execute: async ({ studentId, description, type }) => {
+        const student = await prisma.student.findFirst({
+          where: { id: studentId, group: { course: { userId: user.id } } },
+          select: { id: true },
+        })
+        if (!student) throw new Error('Estudiante no encontrado o no tienes acceso')
+
+        const obs = await prisma.observation.create({
+          data: { description, type: type || 'ACADEMIC', studentId, userId: user.id },
+          select: { id: true, description: true, type: true, createdAt: true },
+        })
+        return obs
+      },
+    }),
+
+    createPeriod: tool({
+      description: 'Crea un período académico',
+      inputSchema: z.object({
+        name: z.string().describe('Nombre del período (ej: Período 1)'),
+        startDate: z.string().describe('Fecha de inicio (YYYY-MM-DD)'),
+        endDate: z.string().describe('Fecha de fin (YYYY-MM-DD)'),
+        year: z.number().int().optional().describe('Año académico'),
+      }),
+      execute: async ({ name, startDate, endDate, year }) => {
+        const period = await prisma.academicPeriod.create({
+          data: { name, startDate: new Date(startDate), endDate: new Date(endDate), year: year || new Date().getFullYear(), userId: user.id },
+          select: { id: true, name: true, startDate: true, endDate: true, year: true },
+        })
+        return period
+      },
+    }),
+
+    editGroup: tool({
+      description: 'Actualiza el nombre o grado de un grupo',
+      inputSchema: z.object({
+        groupId: z.string().describe('ID del grupo a editar'),
+        name: z.string().optional().describe('Nuevo nombre del grupo'),
+        grade: z.string().optional().describe('Nuevo grado'),
+      }),
+      execute: async ({ groupId, name, grade }) => {
+        const existing = await prisma.group.findFirst({
+          where: { id: groupId, course: { userId: user.id } },
+          select: { id: true },
+        })
+        if (!existing) throw new Error('Grupo no encontrado o no tienes acceso')
+
+        const data: Record<string, string> = {}
+        if (name !== undefined) data.name = name
+        if (grade !== undefined) data.grade = grade
+
+        const group = await prisma.group.update({
+          where: { id: groupId },
+          data,
+          select: { id: true, name: true, grade: true },
+        })
+        return group
+      },
+    }),
+
+    deleteGroup: tool({
+      description: 'Elimina un grupo (requiere confirmación del usuario)',
+      inputSchema: z.object({
+        groupId: z.string().describe('ID del grupo a eliminar'),
+        confirm: z.boolean().describe('El usuario debe confirmar explícitamente con true'),
+      }),
+      execute: async ({ groupId, confirm }) => {
+        if (!confirm) throw new Error('Debes confirmar la eliminación')
+
+        const group = await prisma.group.findFirst({
+          where: { id: groupId, course: { userId: user.id } },
+          select: { id: true, name: true },
+        })
+        if (!group) throw new Error('Grupo no encontrado o no tienes acceso')
+
+        await prisma.group.delete({ where: { id: groupId } })
+        return { deleted: true, name: group.name }
+      },
+    }),
   }
 
   const messages = [
-    { role: 'assistant' as const, content: '¡Hola! Soy AulaBot, tu asistente docente. ¿En qué puedo ayudarte? Puedo consultar tus cursos, grupos, y hasta crear clases con plan completo.' },
+    { role: 'assistant' as const, content: '¡Hola! Soy AulaBot, tu asistente docente. Puedo consultar y gestionar cursos, grupos, estudiantes, clases, observaciones y períodos. ¿En qué te ayudo?' },
     ...history.map(h => ({
       role: h.role as 'user' | 'assistant',
       content: h.content,
