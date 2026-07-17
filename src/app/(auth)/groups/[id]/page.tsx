@@ -21,35 +21,35 @@ export default async function GroupDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">{group.name}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-bold">{group.name}</h1>
+          <p className="text-sm text-muted-foreground">
             {group.course.name} {group.grade ? `- ${group.grade}` : ''}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button render={<Link href={`/groups/${id}/edit`} />} variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-1" />
-            Editar
+            <Edit className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Editar</span>
           </Button>
           <form action={deleteGroup.bind(null, id)}>
             <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Eliminar
+              <Trash2 className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Eliminar</span>
             </Button>
           </form>
           <Button render={<Link href={`/groups/${id}/students/new`} />} size="sm">
-            <UserPlus className="h-4 w-4 mr-1" />
-            Agregar
+            <UserPlus className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Agregar</span>
           </Button>
-          <Button render={<Link href={`/groups/${id}/import`} />} size="sm">
-            <FileSpreadsheet className="h-4 w-4 mr-1" />
-            Importar Excel
+          <Button render={<Link href={`/groups/${id}/import`} />} variant="outline" size="sm">
+            <FileSpreadsheet className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Excel</span>
           </Button>
           <Button render={<Link href={`/classes/new?groupId=${id}`} />} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Planificar clase
+            <Plus className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Clase</span>
           </Button>
         </div>
       </div>

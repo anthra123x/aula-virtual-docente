@@ -79,18 +79,18 @@ export default function NewClassPage({
           <form action={handleSubmit} className="space-y-6">
             {groupId && <input type="hidden" name="groupId" value={groupId} />}
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Fecha</Label>
-                <Input id="date" name="date" type="date" required />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="date" className="text-sm">Fecha</Label>
+                <Input id="date" name="date" type="date" required className="text-sm" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="startTime">Hora inicio</Label>
-                <Input id="startTime" name="startTime" type="time" />
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="startTime" className="text-sm">Inicio</Label>
+                <Input id="startTime" name="startTime" type="time" className="text-sm" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="endTime">Hora fin</Label>
-                <Input id="endTime" name="endTime" type="time" />
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="endTime" className="text-sm">Fin</Label>
+                <Input id="endTime" name="endTime" type="time" className="text-sm" />
               </div>
             </div>
 

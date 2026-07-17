@@ -21,30 +21,30 @@ export default async function CourseDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="h-4 w-4 rounded-full" style={{ backgroundColor: course.color }} />
+          <div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: course.color }} />
           <div>
-            <h1 className="text-2xl font-bold">{course.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">{course.name}</h1>
             {course.description && (
-              <p className="text-muted-foreground">{course.description}</p>
+              <p className="text-sm text-muted-foreground">{course.description}</p>
             )}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button render={<Link href={`/courses/${id}/edit`} />} variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-1" />
-            Editar
+            <Edit className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Editar</span>
           </Button>
           <form action={deleteCourse.bind(null, id)}>
             <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Eliminar
+              <Trash2 className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Eliminar</span>
             </Button>
           </form>
           <Button render={<Link href={`/courses/${id}/groups/new`} />} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Nuevo grupo
+            <Plus className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Nuevo grupo</span>
           </Button>
         </div>
       </div>

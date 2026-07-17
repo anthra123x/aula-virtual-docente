@@ -22,8 +22,8 @@ export default async function ObservationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Observaciones</h1>
-        <p className="text-muted-foreground">Registro de observaciones académicas y de comportamiento</p>
+        <h1 className="text-xl sm:text-2xl font-bold">Observaciones</h1>
+        <p className="text-sm text-muted-foreground">Registro de observaciones académicas y de comportamiento</p>
       </div>
 
       <div className="space-y-3">

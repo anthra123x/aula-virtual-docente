@@ -22,29 +22,29 @@ export default async function StudentDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             {student.lastName}, {student.firstName}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {student.group.course.name} - {student.group.name}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button render={<Link href={`/students/${id}/edit`} />} variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-1" />
-            Editar
+            <Edit className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Editar</span>
           </Button>
           <form action={deleteStudent.bind(null, id)}>
             <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Eliminar
+              <Trash2 className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">Eliminar</span>
             </Button>
           </form>
           <Button render={<Link href={`/observations/new?studentId=${id}`} />} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Nueva observación
+            <Plus className="h-4 w-4 md:mr-1" />
+            <span className="hidden md:inline">Observación</span>
           </Button>
         </div>
       </div>

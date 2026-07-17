@@ -15,14 +15,14 @@ export default async function PeriodsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Períodos académicos</h1>
-          <p className="text-muted-foreground">Configura los bimestres del año escolar</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Períodos académicos</h1>
+          <p className="text-sm text-muted-foreground">Configura los bimestres del año escolar</p>
         </div>
-        <Button render={<Link href="/periods/new" />}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo período
+        <Button render={<Link href="/periods/new" />} size="sm">
+          <Plus className="h-4 w-4 md:mr-2" />
+          <span className="hidden md:inline">Nuevo período</span>
         </Button>
       </div>
 
