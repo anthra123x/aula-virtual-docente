@@ -23,7 +23,7 @@ export async function getCurrentUser() {
 }
 
 function devFallback() {
-  if (process.env.NODE_ENV !== 'production' || !process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('supabase.co')) {
+  if (process.env.NODE_ENV !== 'production') {
     return { id: 'dev-user', email: 'dev@local.dev', name: 'Usuario de Prueba', avatar: null }
   }
   return null

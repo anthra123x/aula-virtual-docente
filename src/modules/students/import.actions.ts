@@ -28,6 +28,15 @@ export async function parseExcel(formData: FormData): Promise<ActionResult<{
   if (!groupId) return failure('ID de grupo requerido')
   if (!file) return failure('Archivo requerido')
 
+  const validTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+    'text/csv',
+  ]
+  if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+    return failure('Formato de archivo no soportado. Usa archivos .xlsx, .xls o .csv')
+  }
+
   const group = await prisma.group.findFirst({
     where: { id: groupId, course: { userId: user.id } },
     select: { id: true, name: true, course: { select: { name: true } } },

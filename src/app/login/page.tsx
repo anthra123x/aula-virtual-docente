@@ -11,16 +11,29 @@ import { login, signup } from '@/modules/auth/auth.actions'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   async function handleSubmit(formData: FormData) {
     setError(null)
+    setLoading(true)
+
+    if (mode === 'signup') {
+      const password = formData.get('password') as string
+      if (password.length < 6) {
+        setError('La contraseña debe tener al menos 6 caracteres')
+        setLoading(false)
+        return
+      }
+    }
+
     const result = mode === 'login' ? await login(formData) : await signup(formData)
 
     if (result && !result.success) {
       setError(result.error)
     }
+    setLoading(false)
   }
 
   return (
@@ -60,8 +73,10 @@ export default function LoginPage() {
               <p className="text-sm text-destructive">{error}</p>
             )}
 
-            <Button type="submit" className="w-full">
-              {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading
+                ? (mode === 'login' ? 'Iniciando sesión...' : 'Creando cuenta...')
+                : (mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta')}
             </Button>
           </form>
 

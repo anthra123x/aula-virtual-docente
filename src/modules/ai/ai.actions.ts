@@ -2,6 +2,7 @@
 
 import { callAI, SYSTEM_PROMPTS } from '@/lib/ai'
 import { requireAuth } from '@/modules/auth/auth.actions'
+import { rateLimit } from '@/lib/rate-limit'
 import { success, failure, type ActionResult } from '@/types'
 
 type PlanSuggestion = {
@@ -12,7 +13,10 @@ type PlanSuggestion = {
 }
 
 export async function generateLessonPlan(formData: FormData): Promise<ActionResult<PlanSuggestion>> {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const rl = rateLimit(`ai:${user.id}`, 20, 60000)
+  if (!rl.ok) return failure('Has alcanzado el límite de solicitudes. Espera un momento antes de intentar de nuevo.')
 
   const topic = formData.get('topic') as string
   const subject = formData.get('subject') as string || ''
@@ -47,7 +51,10 @@ Incluye objetivos de aprendizaje claros, actividades detalladas paso a paso, rec
 }
 
 export async function generateActivities(formData: FormData): Promise<ActionResult<string>> {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const rl = rateLimit(`ai:${user.id}`, 20, 60000)
+  if (!rl.ok) return failure('Has alcanzado el límite de solicitudes. Espera un momento antes de intentar de nuevo.')
 
   const topic = formData.get('topic') as string
   const subject = formData.get('subject') as string || ''
@@ -74,7 +81,10 @@ export async function generateActivities(formData: FormData): Promise<ActionResu
 }
 
 export async function generateEvaluation(formData: FormData): Promise<ActionResult<string>> {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const rl = rateLimit(`ai:${user.id}`, 20, 60000)
+  if (!rl.ok) return failure('Has alcanzado el límite de solicitudes. Espera un momento antes de intentar de nuevo.')
 
   const topic = formData.get('topic') as string
   const grade = formData.get('grade') as string || ''
@@ -112,7 +122,10 @@ ${evalType === 'questions' ? 'Genera 5 preguntas con sus respuestas.' : 'Genera 
 }
 
 export async function optimizeLessonPlan(formData: FormData): Promise<ActionResult<PlanSuggestion>> {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const rl = rateLimit(`ai:${user.id}`, 20, 60000)
+  if (!rl.ok) return failure('Has alcanzado el límite de solicitudes. Espera un momento antes de intentar de nuevo.')
 
   const instruction = formData.get('instruction') as string
   const currentPlan = formData.get('currentPlan') as string
