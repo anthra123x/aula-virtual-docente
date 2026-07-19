@@ -13,7 +13,13 @@ import {
 import { success, failure, type ActionResult } from '@/types'
 
 export async function getClassesByGroup(groupId: string) {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, course: { userId: user.id } },
+    select: { id: true },
+  })
+  if (!group) return success([])
 
   const classes = await prisma.classSession.findMany({
     where: { groupId },
@@ -181,12 +187,16 @@ export async function updateClassStatus(id: string, status: 'PLANNED' | 'DONE' |
 }
 
 export async function deleteClass(id: string) {
-  await requireAuth()
+  const user = await requireAuth()
 
-  const cls = await prisma.classSession.findUnique({ where: { id }, select: { groupId: true } })
+  const cls = await prisma.classSession.findFirst({
+    where: { id, group: { course: { userId: user.id } } },
+    select: { groupId: true },
+  })
+  if (!cls) redirect('/classes')
 
   await prisma.classSession.delete({ where: { id } })
-  revalidatePath(`/groups/${cls?.groupId || ''}`)
+  revalidatePath(`/groups/${cls.groupId}`)
   revalidatePath('/classes')
-  redirect(cls ? `/groups/${cls.groupId}` : '/classes')
+  redirect(`/groups/${cls.groupId}`)
 }

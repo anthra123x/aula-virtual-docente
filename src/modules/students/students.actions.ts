@@ -102,11 +102,15 @@ export async function updateStudent(id: string, formData: FormData): Promise<Act
 }
 
 export async function deleteStudent(id: string) {
-  await requireAuth()
+  const user = await requireAuth()
 
-  const student = await prisma.student.findUnique({ where: { id }, select: { groupId: true } })
+  const student = await prisma.student.findFirst({
+    where: { id, group: { course: { userId: user.id } } },
+    select: { groupId: true },
+  })
+  if (!student) redirect('/students')
 
   await prisma.student.delete({ where: { id } })
-  revalidatePath(`/groups/${student?.groupId || ''}`)
-  redirect(student ? `/groups/${student.groupId}` : '/students')
+  revalidatePath(`/groups/${student.groupId}`)
+  redirect(`/groups/${student.groupId}`)
 }

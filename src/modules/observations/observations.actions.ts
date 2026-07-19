@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { CreateObservationSchema, UpdateObservationSchema } from '@/lib/validations'
 import { success, failure, type ActionResult } from '@/types'
@@ -22,7 +23,13 @@ export async function getObservationById(id: string) {
 }
 
 export async function getObservationsByStudent(studentId: string) {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const student = await prisma.student.findFirst({
+    where: { id: studentId, group: { course: { userId: user.id } } },
+    select: { id: true },
+  })
+  if (!student) return success([])
 
   const observations = await prisma.observation.findMany({
     where: { studentId },
@@ -91,11 +98,15 @@ export async function updateObservation(id: string, formData: FormData): Promise
 }
 
 export async function deleteObservation(id: string) {
-  await requireAuth()
+  const user = await requireAuth()
 
-  const observation = await prisma.observation.findUnique({ where: { id }, select: { studentId: true } })
+  const observation = await prisma.observation.findFirst({
+    where: { id, userId: user.id },
+    select: { studentId: true },
+  })
+  if (!observation) redirect('/observations')
 
   await prisma.observation.delete({ where: { id } })
-  revalidatePath(`/students/${observation?.studentId || ''}`)
+  revalidatePath(`/students/${observation.studentId}`)
   revalidatePath('/observations')
 }

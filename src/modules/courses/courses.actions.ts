@@ -61,7 +61,13 @@ export async function createCourse(formData: FormData): Promise<ActionResult<unk
 }
 
 export async function updateCourse(id: string, formData: FormData): Promise<ActionResult<unknown>> {
-  await requireAuth()
+  const user = await requireAuth()
+
+  const existing = await prisma.course.findFirst({
+    where: { id, userId: user.id },
+    select: { id: true },
+  })
+  if (!existing) return failure('Materia no encontrada')
 
   const validated = UpdateCourseSchema.safeParse({
     name: formData.get('name'),
