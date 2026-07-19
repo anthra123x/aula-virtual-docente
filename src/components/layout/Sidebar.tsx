@@ -9,6 +9,7 @@ import {
   FileText,
   BarChart3,
   CalendarDays,
+  Settings,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,6 +24,7 @@ const navItems = [
   { label: 'Clases', href: '/classes', icon: CalendarDays },
   { label: 'Observaciones', href: '/observations', icon: FileText },
   { label: 'Períodos', href: '/periods', icon: CalendarDays },
+  { label: 'Configuración', href: '/settings', icon: Settings },
 ]
 
 function NavLinks() {
