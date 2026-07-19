@@ -22,7 +22,9 @@ export default async function AuthLayout({
     <SidebarProvider>
       <div className="flex h-dvh">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 relative
+          bg-gradient-to-br from-background via-background to-accent/[0.015]
+          animate-bg-drift">
           <Header user={user} />
           <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
         </div>

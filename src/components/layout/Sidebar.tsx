@@ -73,13 +73,14 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="hidden md:flex w-64 border-r bg-card h-screen flex-col shadow-clay-inset shrink-0">
+      <aside className="hidden md:flex w-64 h-screen flex-col shrink-0
+        bg-card/80 backdrop-blur-lg border-r border-border/60">
         <SidebarLogo />
         <NavLinks />
       </aside>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-72 p-0 flex flex-col">
+        <SheetContent side="left" className="w-72 p-0 flex flex-col glass-liquid">
           <div className="flex items-center justify-between pr-2">
             <SidebarLogo />
             <button
