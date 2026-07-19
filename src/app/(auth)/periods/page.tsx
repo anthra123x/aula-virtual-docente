@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { deletePeriod } from '@/modules/periods/periods.actions'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { DeleteButton } from '@/components/ui/delete-button'
 import Link from 'next/link'
 
 export default async function PeriodsPage() {
@@ -32,11 +33,7 @@ export default async function PeriodsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{period.name}</CardTitle>
-                <form action={deletePeriod.bind(null, period.id)}>
-                  <Button type="submit" variant="destructive" size="icon-xs">
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </form>
+                <DeleteButton action={deletePeriod} id={period.id} size="icon-xs" />
               </div>
             </CardHeader>
             <CardContent>

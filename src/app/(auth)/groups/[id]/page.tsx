@@ -1,6 +1,7 @@
 import { getGroupById, deleteGroup } from '@/modules/groups/groups.actions'
-import { Plus, UserPlus, Edit, Trash2, FileSpreadsheet } from 'lucide-react'
+import { Plus, UserPlus, Edit, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -33,12 +34,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
             <Edit className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Editar</span>
           </Button>
-          <form action={deleteGroup.bind(null, id)}>
-            <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Eliminar</span>
-            </Button>
-          </form>
+          <DeleteButton action={deleteGroup} id={id} label="grupo" description={`¿Eliminar el grupo "${group.name}" y todos sus estudiantes?`} />
           <Button render={<Link href={`/groups/${id}/students/new`} />} size="sm">
             <UserPlus className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Agregar</span>

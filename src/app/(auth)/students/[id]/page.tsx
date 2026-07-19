@@ -1,6 +1,7 @@
 import { getStudentById, deleteStudent } from '@/modules/students/students.actions'
-import { FileText, Plus, Edit, Trash2 } from 'lucide-react'
+import { FileText, Plus, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
@@ -36,12 +37,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
             <Edit className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Editar</span>
           </Button>
-          <form action={deleteStudent.bind(null, id)}>
-            <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Eliminar</span>
-            </Button>
-          </form>
+          <DeleteButton action={deleteStudent} id={id} label="estudiante" description={`¿Eliminar a ${student.lastName}, ${student.firstName}?`} />
           <Button render={<Link href={`/observations/new?studentId=${id}`} />} size="sm">
             <Plus className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Observación</span>

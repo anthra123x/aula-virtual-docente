@@ -1,6 +1,7 @@
 import { getCourseById, deleteCourse } from '@/modules/courses/courses.actions'
-import { Plus, Edit, Trash2, Users, CalendarDays } from 'lucide-react'
+import { Plus, Edit, Users, CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -36,12 +37,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
             <Edit className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Editar</span>
           </Button>
-          <form action={deleteCourse.bind(null, id)}>
-            <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 md:mr-1" />
-              <span className="hidden md:inline">Eliminar</span>
-            </Button>
-          </form>
+          <DeleteButton action={deleteCourse} id={id} label="materia" />
           <Button render={<Link href={`/courses/${id}/groups/new`} />} size="sm">
             <Plus className="h-4 w-4 md:mr-1" />
             <span className="hidden md:inline">Nuevo grupo</span>

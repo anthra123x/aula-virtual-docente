@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { deleteObservation } from '@/modules/observations/observations.actions'
-import { Edit, Trash2 } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { DeleteButton } from '@/components/ui/delete-button'
 import Link from 'next/link'
 
 export default async function ObservationsPage() {
@@ -49,11 +50,7 @@ export default async function ObservationsPage() {
                   <Button render={<Link href={`/observations/${obs.id}/edit`} />} variant="ghost" size="icon-xs">
                     <Edit className="h-3 w-3" />
                   </Button>
-                  <form action={deleteObservation.bind(null, obs.id)}>
-                    <Button type="submit" variant="destructive" size="icon-xs">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </form>
+                  <DeleteButton action={deleteObservation} id={obs.id} size="icon-xs" />
                 </div>
               </div>
               <p className="text-sm mt-3 whitespace-pre-wrap">{obs.description}</p>

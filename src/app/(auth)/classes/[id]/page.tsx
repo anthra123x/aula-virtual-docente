@@ -1,9 +1,10 @@
 import { getClassById, deleteClass } from '@/modules/classes/classes.actions'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Edit, ClipboardCheck, CheckCircle2, XCircle, Clock, Trash2 } from 'lucide-react'
+import { Edit, ClipboardCheck, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -70,12 +71,7 @@ export default async function ClassDetailPage({ params }: PageProps) {
             <Edit className="h-4 w-4 mr-1" />
             Editar
           </Button>
-          <form action={deleteClass.bind(null, id)}>
-            <Button type="submit" variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-1" />
-              Eliminar
-            </Button>
-          </form>
+          <DeleteButton action={deleteClass} id={id} label="clase" />
           <Button render={<Link href={`/classes/${id}/attendance`} />} size="sm">
             <ClipboardCheck className="h-4 w-4 mr-1" />
             Asistencia
