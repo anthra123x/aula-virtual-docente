@@ -1,7 +1,9 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { CalendarDays, Users, BookOpen, GraduationCap } from 'lucide-react'
+import { CalendarDays, Users, BookOpen, GraduationCap, BarChart3, PieChart } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ClassesByCourseChart } from '@/components/charts/classes-by-course'
+import { AttendanceDistribution } from '@/components/charts/attendance-distribution'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -14,34 +16,67 @@ export default async function DashboardPage() {
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const [courseCount, groupCount, studentCount, todayClasses, upcomingClasses] =
-    await Promise.all([
-      prisma.course.count({ where: { userId: user!.id } }),
-      prisma.group.count({
-        where: { course: { userId: user!.id } },
-      }),
-      prisma.student.count({
-        where: { group: { course: { userId: user!.id } } },
-      }),
-      prisma.classSession.findMany({
-        where: {
-          group: { course: { userId: user!.id } },
-          date: { gte: today, lt: tomorrow },
+  const [
+    courseCount, groupCount, studentCount,
+    todayClasses, upcomingClasses,
+    coursesWithClasses, attendanceRecords,
+  ] = await Promise.all([
+    prisma.course.count({ where: { userId: user!.id } }),
+    prisma.group.count({
+      where: { course: { userId: user!.id } },
+    }),
+    prisma.student.count({
+      where: { group: { course: { userId: user!.id } } },
+    }),
+    prisma.classSession.findMany({
+      where: {
+        group: { course: { userId: user!.id } },
+        date: { gte: today, lt: tomorrow },
+      },
+      include: { group: { include: { course: true } } },
+      orderBy: { date: 'asc' },
+    }),
+    prisma.classSession.findMany({
+      where: {
+        group: { course: { userId: user!.id } },
+        date: { gte: tomorrow },
+        status: 'PLANNED',
+      },
+      include: { group: { include: { course: true } } },
+      orderBy: { date: 'asc' },
+      take: 5,
+    }),
+    prisma.course.findMany({
+      where: { userId: user!.id },
+      include: {
+        groups: {
+          include: {
+            _count: { select: { classSessions: true } },
+          },
         },
-        include: { group: { include: { course: true } } },
-        orderBy: { date: 'asc' },
-      }),
-      prisma.classSession.findMany({
-        where: {
-          group: { course: { userId: user!.id } },
-          date: { gte: tomorrow },
-          status: 'PLANNED',
-        },
-        include: { group: { include: { course: true } } },
-        orderBy: { date: 'asc' },
-        take: 5,
-      }),
-    ])
+      },
+    }),
+    prisma.attendanceRecord.findMany({
+      where: {
+        classSession: { group: { course: { userId: user!.id } } },
+      },
+      select: { status: true },
+    }),
+  ])
+
+  const classesByCourse = coursesWithClasses
+    .map(c => ({
+      name: c.name,
+      classes: c.groups.reduce((sum, g) => sum + g._count.classSessions, 0),
+    }))
+    .filter(c => c.classes > 0)
+    .sort((a, b) => b.classes - a.classes)
+
+  const attendanceCount: Record<string, number> = {}
+  for (const r of attendanceRecords) {
+    attendanceCount[r.status] = (attendanceCount[r.status] || 0) + 1
+  }
+  const attendanceData = Object.entries(attendanceCount).map(([name, value]) => ({ name, value }))
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -149,6 +184,32 @@ export default async function DashboardPage() {
                 ))}
               </ul>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="glass-liquid">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Clases por materia</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ClassesByCourseChart data={classesByCourse} />
+          </CardContent>
+        </Card>
+
+        <Card className="glass-liquid">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Asistencia global</CardTitle>
+              <PieChart className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <AttendanceDistribution data={attendanceData} />
           </CardContent>
         </Card>
       </div>

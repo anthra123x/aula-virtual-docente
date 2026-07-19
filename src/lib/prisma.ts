@@ -15,6 +15,9 @@ function createPrismaClient() {
     user: decodeURIComponent(connectionUrl.username),
     password: decodeURIComponent(connectionUrl.password),
     database: connectionUrl.pathname.replace('/', ''),
+    max: 5,
+    idleTimeoutMillis: 15000,
+    connectionTimeoutMillis: 10000,
   })
 
   return new PrismaClient({
