@@ -4,13 +4,41 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAuth } from '@/modules/auth/auth.actions'
-import {
-  CreateClassSessionSchema,
-  UpdateClassSessionSchema,
-  CreateLessonPlanSchema,
-  UpdateLessonPlanSchema,
-} from '@/lib/validations'
+import { CreateClassSessionSchema, UpdateClassSessionSchema, UpdateLessonPlanSchema } from '@/lib/validations'
+import { formVal, formatZodError } from '@/lib/zod-utils'
 import { success, failure, type ActionResult } from '@/types'
+
+export async function getAllGroups() {
+  const user = await requireAuth()
+
+  const courses = await prisma.course.findMany({
+    where: { userId: user.id },
+    include: { groups: { orderBy: { name: 'asc' } } },
+    orderBy: { name: 'asc' },
+  })
+
+  const groups = courses.flatMap((c) =>
+    c.groups.map((g) => ({ id: g.id, name: g.name, courseName: c.name }))
+  )
+
+  return success(groups)
+}
+
+export async function getClasses() {
+  const user = await requireAuth()
+
+  const classes = await prisma.classSession.findMany({
+    where: { group: { course: { userId: user.id } } },
+    orderBy: { date: 'desc' },
+    take: 50,
+    include: {
+      group: { include: { course: true } },
+      _count: { select: { attendanceRecords: true } },
+    },
+  })
+
+  return success(classes)
+}
 
 export async function getClassesByGroup(groupId: string) {
   const user = await requireAuth()
@@ -24,10 +52,7 @@ export async function getClassesByGroup(groupId: string) {
   const classes = await prisma.classSession.findMany({
     where: { groupId },
     orderBy: { date: 'desc' },
-    include: {
-      lessonPlan: true,
-      _count: { select: { attendanceRecords: true } },
-    },
+    include: { lessonPlan: true, _count: { select: { attendanceRecords: true } } },
   })
 
   return success(classes)
@@ -39,7 +64,12 @@ export async function getClassById(id: string) {
   const cls = await prisma.classSession.findFirst({
     where: { id, group: { course: { userId: user.id } } },
     include: {
-      group: { include: { course: true, students: { orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] } } },
+      group: {
+        include: {
+          course: true,
+          students: { orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] },
+        },
+      },
       lessonPlan: true,
       attendanceRecords: {
         include: { student: { select: { id: true, firstName: true, lastName: true } } },
@@ -47,10 +77,7 @@ export async function getClassById(id: string) {
     },
   })
 
-  if (!cls) {
-    return failure('Clase no encontrada')
-  }
-
+  if (!cls) return failure('Clase no encontrada')
   return success(cls)
 }
 
@@ -58,22 +85,20 @@ export async function createClassWithPlan(formData: FormData): Promise<ActionRes
   const user = await requireAuth()
 
   const validated = CreateClassSessionSchema.safeParse({
-    date: formData.get('date'),
+    date: formVal(formData, 'date'),
     startTime: formData.get('startTime') || null,
     endTime: formData.get('endTime') || null,
-    topic: formData.get('topic'),
+    topic: formVal(formData, 'topic'),
     status: 'PLANNED',
-    groupId: formData.get('groupId'),
+    groupId: formVal(formData, 'groupId'),
     periodId: formData.get('periodId') || null,
   })
 
-  if (!validated.success) {
-    return failure(validated.error.issues.map((e) => e.message).join(', '))
-  }
+  if (!validated.success) return failure(formatZodError(validated.error))
 
   const group = await prisma.group.findFirst({
     where: { id: validated.data.groupId, course: { userId: user.id } },
-    select: { id: true },
+    select: { id: true, courseId: true },
   })
   if (!group) return failure('Grupo no encontrado')
 
@@ -99,7 +124,9 @@ export async function createClassWithPlan(formData: FormData): Promise<ActionRes
   })
 
   revalidatePath(`/groups/${validated.data.groupId}`)
+  revalidatePath(`/courses/${group.courseId}`)
   revalidatePath('/classes')
+  revalidatePath('/dashboard')
   return success(classSession)
 }
 
@@ -112,17 +139,15 @@ export async function updateClass(id: string, formData: FormData): Promise<Actio
   if (!existing) return failure('Clase no encontrada')
 
   const validated = UpdateClassSessionSchema.safeParse({
-    date: formData.get('date'),
+    date: formVal(formData, 'date'),
     startTime: formData.get('startTime') || null,
     endTime: formData.get('endTime') || null,
-    topic: formData.get('topic'),
-    status: formData.get('status'),
+    topic: formVal(formData, 'topic'),
+    status: formVal(formData, 'status'),
     periodId: formData.get('periodId') || null,
   })
 
-  if (!validated.success) {
-    return failure(validated.error.issues.map((e) => e.message).join(', '))
-  }
+  if (!validated.success) return failure(formatZodError(validated.error))
 
   const classSession = await prisma.classSession.update({
     where: { id },
@@ -137,6 +162,9 @@ export async function updateClass(id: string, formData: FormData): Promise<Actio
   })
 
   revalidatePath(`/classes/${id}`)
+  revalidatePath(`/groups/${classSession.groupId}`)
+  revalidatePath('/classes')
+  revalidatePath('/dashboard')
   return success(classSession)
 }
 
@@ -169,7 +197,9 @@ export async function updateLessonPlan(classSessionId: string, formData: FormDat
   return success(lessonPlan)
 }
 
-export async function updateClassStatus(id: string, status: 'PLANNED' | 'DONE' | 'CANCELLED'): Promise<ActionResult<void>> {
+export async function updateClassStatus(
+  id: string, status: 'PLANNED' | 'DONE' | 'CANCELLED',
+): Promise<ActionResult<void>> {
   const user = await requireAuth()
 
   const cls = await prisma.classSession.findFirst({
@@ -177,12 +207,10 @@ export async function updateClassStatus(id: string, status: 'PLANNED' | 'DONE' |
   })
   if (!cls) return failure('Clase no encontrada')
 
-  await prisma.classSession.update({
-    where: { id },
-    data: { status },
-  })
-
+  await prisma.classSession.update({ where: { id }, data: { status } })
   revalidatePath(`/classes/${id}`)
+  revalidatePath('/classes')
+  revalidatePath('/dashboard')
   return success(undefined)
 }
 
@@ -198,5 +226,6 @@ export async function deleteClass(id: string) {
   await prisma.classSession.delete({ where: { id } })
   revalidatePath(`/groups/${cls.groupId}`)
   revalidatePath('/classes')
-  redirect(`/groups/${cls.groupId}`)
+  revalidatePath('/dashboard')
+  redirect('/classes')
 }
