@@ -16,6 +16,7 @@ export default function EditCoursePage({ params }: PageProps) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [notFound, setNotFound] = useState(false)
   const [id, setId] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -26,10 +27,11 @@ export default function EditCoursePage({ params }: PageProps) {
       setId(p.id)
       const result = await getCourseById(p.id)
       if (result.success) {
-        const course = result.data as { name: string; description?: string | null; color: string }
-        setName(course.name)
-        setDescription(course.description || '')
-        setColor(course.color)
+        setName(result.data.name)
+        setDescription(result.data.description || '')
+        setColor(result.data.color)
+      } else {
+        setNotFound(true)
       }
       setLoading(false)
     })
@@ -47,10 +49,50 @@ export default function EditCoursePage({ params }: PageProps) {
     }
   }
 
-  if (loading) return null
+  if (loading) {
+    const shimmer = 'animate-shimmer rounded'
+    return (
+      <div className="max-w-lg mx-auto animate-fade-in">
+        <Card>
+          <CardHeader>
+            <div className={`${shimmer} h-6 w-40`} />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className={`${shimmer} h-4 w-32`} />
+              <div className={`${shimmer} h-10 w-full`} />
+            </div>
+            <div className="space-y-2">
+              <div className={`${shimmer} h-4 w-32`} />
+              <div className={`${shimmer} h-10 w-full`} />
+            </div>
+            <div className="space-y-2">
+              <div className={`${shimmer} h-4 w-16`} />
+              <div className={`${shimmer} h-10 w-20`} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <div className={`${shimmer} h-8 w-20`} />
+              <div className={`${shimmer} h-8 w-32`} />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (notFound) {
+    return (
+      <div className="max-w-lg mx-auto text-center py-12">
+        <p className="text-muted-foreground">Materia no encontrada</p>
+        <Button variant="outline" className="mt-4" onClick={() => router.push('/courses')}>
+          Volver a materias
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg mx-auto animate-fade-in">
       <Card>
         <CardHeader>
           <CardTitle>Editar materia</CardTitle>
@@ -67,7 +109,7 @@ export default function EditCoursePage({ params }: PageProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="color">Color</Label>
-              <Input id="color" name="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-10 w-20" />
+              <Input id="color" name="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-10 w-24 cursor-pointer" />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}

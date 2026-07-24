@@ -1,16 +1,27 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createCourse } from '@/modules/courses/courses.actions'
-import { useState } from 'react'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function NewCoursePage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [dirty, setDirty] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  const handleFormChange = useCallback(() => {
+    if (!dirty) setDirty(true)
+  }, [dirty])
 
   async function handleSubmit(formData: FormData) {
     setError(null)
@@ -24,14 +35,22 @@ export default function NewCoursePage() {
     }
   }
 
+  function handleCancel() {
+    if (dirty) {
+      setConfirmCancel(true)
+    } else {
+      router.back()
+    }
+  }
+
   return (
-    <div className="max-w-lg mx-auto">
-      <Card>
+    <div className="max-w-lg mx-auto animate-fade-in">
+      <Card className="glass-liquid">
         <CardHeader>
           <CardTitle>Nueva materia</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={handleSubmit} className="space-y-4">
+          <form ref={formRef} action={handleSubmit} onChange={handleFormChange} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre de la materia</Label>
               <Input id="name" name="name" placeholder="Ej: Matemáticas 10°" required />
@@ -42,13 +61,13 @@ export default function NewCoursePage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="color">Color</Label>
-              <Input id="color" name="color" type="color" defaultValue="#3B82F6" className="h-10 w-20" />
+              <Input id="color" name="color" type="color" defaultValue="#3B82F6" className="h-10 w-24 cursor-pointer" />
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button type="button" variant="outline" onClick={handleCancel}>
                 Cancelar
               </Button>
               <Button type="submit">Crear materia</Button>
@@ -56,6 +75,25 @@ export default function NewCoursePage() {
           </form>
         </CardContent>
       </Card>
+
+      <Dialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Descartar cambios?</DialogTitle>
+            <DialogDescription>
+              Hay cambios sin guardar. Si cancelas se perderán los datos ingresados.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmCancel(false)}>
+              Seguir editando
+            </Button>
+            <Button variant="destructive" onClick={() => router.back()}>
+              Descartar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
