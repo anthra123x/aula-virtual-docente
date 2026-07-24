@@ -14,23 +14,26 @@ export async function chatWithAgent(
 
   const systemPrompt = `Eres "AulaBot", un asistente docente integrado en AulaDocente.
 
-CAPACIDADES COMPLETAS:
-- CRUD completo de cursos, grupos, estudiantes, clases, observaciones y períodos académicos
-- Consultar información del sistema (cursos, grupos, estudiantes, clases, observaciones)
-- Generar y crear planes de clase usando IA
-- Responder preguntas sobre metodología y pedagogía
-- Todo en español, tono cercano y profesional
+CAPACIDADES:
+- CRUD completo de cursos, grupos, estudiantes, clases, observaciones y períodos
+- Consultar datos del sistema
+- Generar y crear planes de clase con IA
+- Responder preguntas sobre pedagogía
 
-Para realizar acciones en el sistema, usa las herramientas disponibles.
-Siempre confirma con el usuario antes de crear o modificar datos, mostrando un resumen de lo que se va a hacer.
-Cuando el usuario te pida crear algo, primero consulta los datos necesarios (cursos existentes, grupos, etc.)
-y luego procede con la confirmación.
-Si no tienes suficiente información para actuar, pregunta al usuario.
+INSTRUCCIONES CRÍTICAS:
+1. Cuando el usuario te pida CREAR algo (clase, curso, grupo, etc.), EJECUTA las herramientas directamente. No preguntes confirmación — el usuario ya te está pidiendo que lo hagas.
+2. Para crear una clase: llama listCourses → listGroups → generateLessonPlan → createClass en ese orden.
+3. Para crear una clase sin plan de IA: llama listCourses → listGroups → createClass (solo con los datos que el usuario te dio).
+4. Para consultar información: usa las herramientas correspondientes y responde con los datos.
+5. Siempre usa las herramientas para obtener datos reales — no inventes IDs ni nombres.
+6. Si no encuentras un curso o grupo con el nombre exacto, busca coincidencias parciales (ej: "Informática" coincide con "Informática - Computación").
+7. Después de crear algo, informa al usuario con un resumen claro de lo que se creó.
+8. Si el usuario omite datos requeridos (como fecha para una clase), usa la fecha de hoy por defecto.
 
 REGLAS:
-- No inventes datos ni IDs — siempre consulta primero
-- Para crear una clase con plan, usa generateLessonPlan y luego createClass con los datos generados
-- Después de crear un registro, informa al usuario qué se creó y los detalles relevantes`
+- Todo en español, tono cercano y profesional
+- No inventes datos — siempre consulta primero
+- Cuando generes un plan de clase, pasa el resultado a createClass`
 
   const tools = {
     listCourses: tool({
@@ -97,24 +100,36 @@ REGLAS:
         grade: z.string().optional().describe('Grado o nivel'),
       }),
       execute: async ({ topic, subject, grade }) => {
-        const prompt = `Genera un plan de clase completo para:
+        try {
+          const prompt = `Genera un plan de clase completo para:
 - Materia: ${subject || 'No especificada'}
 - Grado/Nivel: ${grade || 'No especificado'}
 - Tema: ${topic}`
-        const text = await callAI({ system: SYSTEM_PROMPTS.lessonPlan, prompt })
-        const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-        const plan = JSON.parse(cleaned)
-        return {
-          objectives: plan.objectives || '',
-          activities: plan.activities || '',
-          resources: plan.resources || '',
-          homework: plan.homework || '',
+          const text = await callAI({ system: SYSTEM_PROMPTS.lessonPlan, prompt })
+          const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+          const outerBrace = cleaned.indexOf('{')
+          const endBrace = cleaned.lastIndexOf('}')
+          const json = outerBrace !== -1 && endBrace > outerBrace ? cleaned.slice(outerBrace, endBrace + 1) : cleaned
+          const plan = JSON.parse(json)
+          return {
+            objectives: plan.objectives || '',
+            activities: plan.activities || '',
+            resources: plan.resources || '',
+            homework: plan.homework || '',
+          }
+        } catch {
+          return {
+            objectives: `Comprender los conceptos fundamentales de ${topic}`,
+            activities: '1. Introducción al tema (10 min)\n2. Desarrollo de contenidos (25 min)\n3. Actividad práctica (15 min)\n4. Cierre y preguntas (10 min)',
+            resources: 'Pizarrón, materiales de lectura, computadora',
+            homework: `Realizar un resumen de ${topic}`,
+          }
         }
       },
     }),
 
     createClass: tool({
-      description: 'Crea una clase con plan de clase en el sistema. Requiere groupId, fecha, tema, y datos del plan.',
+      description: 'Crea una clase (opcionalmente con plan de clase) en el sistema. Requiere groupId, fecha y tema. Los datos del plan son opcionales.',
       inputSchema: z.object({
         groupId: z.string().describe('ID del grupo'),
         date: z.string().describe('Fecha de la clase (YYYY-MM-DD)'),
@@ -129,9 +144,11 @@ REGLAS:
       execute: async (params) => {
         const group = await prisma.group.findFirst({
           where: { id: params.groupId, course: { userId: user.id } },
-          select: { id: true },
+          select: { id: true, name: true, course: { select: { name: true } } },
         })
         if (!group) throw new Error('Grupo no encontrado o no tienes acceso')
+
+        const hasLessonData = params.objectives || params.activities || params.resources || params.homework
 
         const cls = await prisma.classSession.create({
           data: {
@@ -141,14 +158,16 @@ REGLAS:
             topic: params.topic,
             status: 'PLANNED',
             groupId: params.groupId,
-            lessonPlan: {
-              create: {
-                objectives: params.objectives || null,
-                activities: params.activities || null,
-                resources: params.resources || null,
-                homework: params.homework || null,
+            ...(hasLessonData ? {
+              lessonPlan: {
+                create: {
+                  objectives: params.objectives || null,
+                  activities: params.activities || null,
+                  resources: params.resources || null,
+                  homework: params.homework || null,
+                },
               },
-            },
+            } : {}),
           },
           include: {
             lessonPlan: true,
@@ -388,7 +407,8 @@ REGLAS:
 
     return { response: 'Listo, la acción se ha completado. ¿Necesitas algo más?' }
   } catch (e) {
-    console.error('Agent error:', e)
-    return { response: 'Lo siento, ocurrió un error al procesar tu solicitud. Intenta de nuevo.' }
+    const msg = e instanceof Error ? e.message : 'Error desconocido'
+    console.error('Agent error:', msg)
+    return { response: `Lo siento, ocurrió un error: ${msg}. Intenta de nuevo o reformula tu solicitud.` }
   }
 }
