@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,11 +14,11 @@ type ParsedRow = {
   phone?: string
 }
 
-export default function ImportStudentsPage({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ id: string }>
-}) {
+}
+
+export default function ImportStudentsPage({ params }: PageProps) {
   const router = useRouter()
   const [step, setStep] = useState<'upload' | 'preview' | 'done'>('upload')
   const [error, setError] = useState<string | null>(null)
@@ -29,31 +29,35 @@ export default function ImportStudentsPage({
   const [groupName, setGroupName] = useState('')
   const [created, setCreated] = useState(0)
   const [file, setFile] = useState<File | null>(null)
+  const [paramsReady, setParamsReady] = useState(false)
+
+  useEffect(() => {
+    params.then((p) => {
+      setGroupId(p.id)
+      setParamsReady(true)
+    })
+  }, [params])
 
   async function handleUpload(formData: FormData) {
+    if (!groupId) return
     setError(null)
     setLoading(true)
-
-    params.then(async (p) => {
-      formData.set('groupId', p.id)
-      const result = await parseExcel(formData)
-      if (result.success) {
-        setRows(result.data.rows)
-        setTotal(result.data.total)
-        setGroupId(result.data.groupId)
-        setGroupName(result.data.groupName)
-        setStep('preview')
-      } else {
-        setError(result.error)
-      }
-      setLoading(false)
-    })
+    formData.set('groupId', groupId)
+    const result = await parseExcel(formData)
+    if (result.success) {
+      setRows(result.data.rows)
+      setTotal(result.data.total)
+      setGroupName(result.data.groupName)
+      setStep('preview')
+    } else {
+      setError(result.error)
+    }
+    setLoading(false)
   }
 
   async function handleConfirm() {
     setError(null)
     setLoading(true)
-
     const result = await confirmImport(groupId, rows)
     if (result.success) {
       setCreated(result.data.created)
@@ -64,12 +68,28 @@ export default function ImportStudentsPage({
     setLoading(false)
   }
 
+  if (!paramsReady) {
+    const shimmer = 'animate-shimmer rounded'
+    return (
+      <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+        <div className={`${shimmer} h-4 w-20`} />
+        <div className={`${shimmer} h-6 w-64`} />
+        <Card>
+          <CardContent className="space-y-4 p-8">
+            <div className={`${shimmer} h-40 w-full`} />
+            <div className={`${shimmer} h-10 w-32`} />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   if (step === 'done') {
     return (
-      <div className="max-w-2xl mx-auto">
-        <Card>
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <Card className="glass-liquid">
           <CardContent className="py-12 text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center mx-auto">
               <Check className="w-8 h-8" />
             </div>
             <h2 className="text-xl font-bold">Importación completada</h2>
@@ -91,7 +111,7 @@ export default function ImportStudentsPage({
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in-up">
       <div>
         <button
           onClick={() => router.back()}
@@ -109,7 +129,7 @@ export default function ImportStudentsPage({
       </div>
 
       {step === 'upload' && (
-        <Card>
+        <Card className="glass-liquid">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5" />
@@ -158,7 +178,7 @@ export default function ImportStudentsPage({
 
       {step === 'preview' && (
         <div className="space-y-4">
-          <Card>
+          <Card className="glass-liquid">
             <CardHeader>
               <CardTitle className="text-base">
                 Vista previa — {total} estudiante{total !== 1 ? 's' : ''} detectado{total !== 1 ? 's' : ''}

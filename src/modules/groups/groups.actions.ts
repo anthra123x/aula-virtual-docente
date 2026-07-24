@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { CreateGroupSchema, UpdateGroupSchema } from '@/lib/validations'
+import { formVal, formatZodError } from '@/lib/zod-utils'
 import { success, failure, type ActionResult } from '@/types'
 
 export async function getGroupsByCourse(courseId: string) {
@@ -33,6 +34,7 @@ export async function getGroupById(id: string) {
     include: {
       course: true,
       students: { orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }] },
+      _count: { select: { classSessions: true } },
     },
   })
 
@@ -47,13 +49,13 @@ export async function createGroup(formData: FormData): Promise<ActionResult<unkn
   const user = await requireAuth()
 
   const validated = CreateGroupSchema.safeParse({
-    name: formData.get('name'),
+    name: formVal(formData, 'name'),
     grade: formData.get('grade') || null,
-    courseId: formData.get('courseId'),
+    courseId: formVal(formData, 'courseId'),
   })
 
   if (!validated.success) {
-    return failure(validated.error.issues.map((e) => e.message).join(', '))
+    return failure(formatZodError(validated.error))
   }
 
   const course = await prisma.course.findFirst({
@@ -67,6 +69,8 @@ export async function createGroup(formData: FormData): Promise<ActionResult<unkn
   })
 
   revalidatePath(`/courses/${validated.data.courseId}`)
+  revalidatePath('/groups')
+  revalidatePath('/dashboard')
   return success(group)
 }
 
@@ -80,12 +84,12 @@ export async function updateGroup(id: string, formData: FormData): Promise<Actio
   if (!existing) return failure('Grupo no encontrado')
 
   const validated = UpdateGroupSchema.safeParse({
-    name: formData.get('name'),
+    name: formVal(formData, 'name'),
     grade: formData.get('grade') || null,
   })
 
   if (!validated.success) {
-    return failure(validated.error.issues.map((e) => e.message).join(', '))
+    return failure(formatZodError(validated.error))
   }
 
   const group = await prisma.group.update({
@@ -95,6 +99,8 @@ export async function updateGroup(id: string, formData: FormData): Promise<Actio
 
   revalidatePath(`/courses/${group.courseId}`)
   revalidatePath(`/groups/${id}`)
+  revalidatePath('/groups')
+  revalidatePath('/dashboard')
   return success(group)
 }
 
@@ -105,9 +111,11 @@ export async function deleteGroup(id: string) {
     where: { id, course: { userId: user.id } },
     select: { courseId: true },
   })
-  if (!group) redirect('/courses')
+  if (!group) redirect('/groups')
 
   await prisma.group.delete({ where: { id } })
   revalidatePath(`/courses/${group.courseId}`)
-  redirect(`/courses/${group.courseId}`)
+  revalidatePath('/groups')
+  revalidatePath('/dashboard')
+  redirect('/groups')
 }

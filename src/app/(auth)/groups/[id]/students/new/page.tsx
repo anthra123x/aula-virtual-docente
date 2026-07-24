@@ -1,24 +1,28 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createStudent } from '@/modules/students/students.actions'
-import { useState, useEffect } from 'react'
 
-export default function NewStudentPage({
-  params,
-}: {
+type PageProps = {
   params: Promise<{ id: string }>
-}) {
+}
+
+export default function NewStudentPage({ params }: PageProps) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [groupId, setGroupId] = useState<string>('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    params.then((p) => setGroupId(p.id))
+    params.then((p) => {
+      setGroupId(p.id)
+      setLoading(false)
+    })
   }, [params])
 
   async function handleSubmit(formData: FormData) {
@@ -33,15 +37,39 @@ export default function NewStudentPage({
     }
   }
 
+  if (loading) {
+    const shimmer = 'animate-shimmer rounded'
+    return (
+      <div className="max-w-lg mx-auto animate-fade-in">
+        <Card>
+          <CardHeader>
+            <div className={`${shimmer} h-6 w-40`} />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className={`${shimmer} h-4 w-20`} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`${shimmer} h-10 w-full`} />
+              <div className={`${shimmer} h-10 w-full`} />
+            </div>
+            <div className={`${shimmer} h-4 w-28`} />
+            <div className={`${shimmer} h-10 w-full`} />
+            <div className={`${shimmer} h-4 w-20`} />
+            <div className={`${shimmer} h-10 w-full`} />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-lg mx-auto">
-      <Card>
+    <div className="max-w-lg mx-auto animate-fade-in">
+      <Card className="glass-liquid">
         <CardHeader>
           <CardTitle>Nuevo estudiante</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={handleSubmit} className="space-y-4">
-            {groupId && <input type="hidden" name="groupId" value={groupId} />}
+            <input type="hidden" name="groupId" value={groupId} />
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">Nombre</Label>
