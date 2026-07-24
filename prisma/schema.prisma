@@ -35,6 +35,7 @@ model User {
   courses       Course[]
   observations  Observation[]
   periods       AcademicPeriod[]
+  settings      UserSetting[]
 
   @@map("users")
 }
@@ -160,6 +161,19 @@ model Observation {
   @@index([studentId])
   @@index([userId])
   @@map("observations")
+}
+
+model UserSetting {
+  id     String @id @default(cuid())
+  userId String
+  key    String
+  value  String @default("")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+  @@map("user_settings")
 }
 
 model AcademicPeriod {
