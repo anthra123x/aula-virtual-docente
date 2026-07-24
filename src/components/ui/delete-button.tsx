@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -15,12 +16,14 @@ type DeleteButtonProps = {
 }
 
 export function DeleteButton({ action, id, label = 'Eliminar', description, variant = 'destructive', size = 'sm' }: DeleteButtonProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleDelete() {
     setLoading(true)
     await action(id)
+    router.refresh()
   }
 
   return (
