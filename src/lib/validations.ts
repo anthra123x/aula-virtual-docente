@@ -82,3 +82,5 @@ export const CreateAcademicPeriodSchema = z.object({
   endDate: z.string().min(1, 'La fecha de fin es requerida'),
   year: z.coerce.number().int().min(2020, 'Año inválido'),
 })
+
+export const UpdateAcademicPeriodSchema = CreateAcademicPeriodSchema.partial()
