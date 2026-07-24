@@ -7,9 +7,9 @@ type Props = {
 }
 
 const COLORS: Record<string, string> = {
-  PRESENTE: 'oklch(0.5 0.1 145)',
-  AUSENTE: 'oklch(0.52 0.14 27)',
-  TARDE: 'oklch(0.6 0.12 80)',
+  PRESENT: 'oklch(0.5 0.1 145)',
+  ABSENT: 'oklch(0.52 0.14 27)',
+  LATE: 'oklch(0.6 0.12 80)',
 }
 
 function label(name: string): string {
