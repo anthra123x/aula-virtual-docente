@@ -2,7 +2,6 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { success, failure, type ActionResult } from '@/types'
 import * as XLSX from 'xlsx'
@@ -13,6 +12,9 @@ type ParsedRow = {
   email?: string
   phone?: string
 }
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
+const MAX_ROWS = 1000
 
 export async function parseExcel(formData: FormData): Promise<ActionResult<{
   rows: ParsedRow[]
@@ -27,6 +29,10 @@ export async function parseExcel(formData: FormData): Promise<ActionResult<{
 
   if (!groupId) return failure('ID de grupo requerido')
   if (!file) return failure('Archivo requerido')
+
+  if (file.size > MAX_FILE_SIZE) {
+    return failure('El archivo es demasiado grande. Máximo 5 MB.')
+  }
 
   const validTypes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -49,6 +55,9 @@ export async function parseExcel(formData: FormData): Promise<ActionResult<{
   const raw: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 })
 
   if (raw.length < 2) return failure('El archivo debe tener al menos un encabezado y una fila de datos')
+  if (raw.length - 1 > MAX_ROWS) {
+    return failure(`El archivo excede el máximo de ${MAX_ROWS} estudiantes por importación`)
+  }
 
   const headers = (raw[0] as (string | undefined)[]).map(h => String(h ?? ''))
   const rows = raw.slice(1) as string[][]

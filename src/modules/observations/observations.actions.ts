@@ -7,6 +7,7 @@ import { requireAuth } from '@/modules/auth/auth.actions'
 import { CreateObservationSchema, UpdateObservationSchema } from '@/lib/validations'
 import { formVal, formatZodError } from '@/lib/zod-utils'
 import { success, failure, type ActionResult } from '@/types'
+import type { Prisma } from '@/generated/prisma/client'
 
 export async function getObservationById(id: string) {
   const user = await requireAuth()
@@ -36,21 +37,23 @@ export async function getObservations(filters?: {
 }) {
   const user = await requireAuth()
 
-  const where: Record<string, unknown> = { userId: user.id }
+  const where: Prisma.ObservationWhereInput = { userId: user.id }
 
-  if (filters?.type) where.type = filters.type
+  if (filters?.type) where.type = filters.type as Prisma.ObservationWhereInput['type']
   if (filters?.studentId) where.studentId = filters.studentId
   if (filters?.courseId || filters?.groupId) {
     where.student = {
-      group: {
-        ...(filters.courseId ? { courseId: filters.courseId } : {}),
-        ...(filters.groupId ? { id: filters.groupId } : {}),
+      is: {
+        group: {
+          ...(filters.courseId ? { courseId: filters.courseId } : {}),
+          ...(filters.groupId ? { id: filters.groupId } : {}),
+        },
       },
     }
   }
 
   const observations = await prisma.observation.findMany({
-    where: where as any,
+    where,
     orderBy: { createdAt: 'desc' },
     take: 100,
     include: {
@@ -89,12 +92,12 @@ export async function searchStudents(query: string) {
         { lastName: { contains: query, mode: 'insensitive' } },
       ],
     },
+    take: 20,
     include: {
       group: { select: { id: true, name: true, course: { select: { name: true } } } },
       _count: { select: { observations: true } },
     },
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-    take: 10,
   })
 
   return success(students)

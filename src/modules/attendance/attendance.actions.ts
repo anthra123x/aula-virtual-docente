@@ -13,9 +13,19 @@ export async function saveAttendance(
 
   const cls = await prisma.classSession.findFirst({
     where: { id: classSessionId, group: { course: { userId: user.id } } },
-    select: { id: true },
+    select: { id: true, groupId: true },
   })
   if (!cls) return failure('Clase no encontrada')
+
+  const studentIds = [...new Set(records.map((r) => r.studentId))]
+  if (studentIds.length !== records.length) return failure('Estudiantes duplicados en el registro')
+
+  const validStudents = await prisma.student.count({
+    where: { id: { in: studentIds }, groupId: cls.groupId },
+  })
+  if (validStudents !== studentIds.length) {
+    return failure('Algunos estudiantes no pertenecen al grupo de esta clase')
+  }
 
   try {
     await prisma.$transaction(
@@ -39,7 +49,7 @@ export async function saveAttendance(
 
     revalidatePath(`/classes/${classSessionId}`)
     return success(undefined)
-  } catch (error) {
+  } catch {
     return failure('Error al guardar la asistencia')
   }
 }

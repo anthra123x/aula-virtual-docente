@@ -52,6 +52,7 @@ export async function getClassesByGroup(groupId: string) {
   const classes = await prisma.classSession.findMany({
     where: { groupId },
     orderBy: { date: 'desc' },
+    take: 50,
     include: { lessonPlan: true, _count: { select: { attendanceRecords: true } } },
   })
 

@@ -22,6 +22,47 @@ export default async function DashboardPage() {
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 7)
 
+  const data = await loadDashboardData(user!.id, today, tomorrow, weekStart, weekEnd)
+  if (!data) return <DashboardError />
+
+  const {
+    courseCount, groupCount, studentCount,
+    todayClasses, upcomingClasses, coursesWithClasses, attendanceRecords,
+    activePeriod, weekClasses, recentStudents, recentObservations,
+  } = data
+
+  const classesByCourse = coursesWithClasses
+    .map((c) => ({
+      name: c.name,
+      classes: c.groups.reduce((sum, g) => sum + g._count.classSessions, 0),
+    }))
+    .filter((c) => c.classes > 0)
+    .sort((a, b) => b.classes - a.classes)
+
+  const attendanceData = (attendanceRecords ?? []).map((r) => ({
+    name: r.status,
+    value: r._count._all,
+  }))
+
+  return (
+    <DashboardContent
+      userName={user?.name}
+      activePeriod={activePeriod}
+      courseCount={courseCount}
+      groupCount={groupCount}
+      studentCount={studentCount}
+      todayClasses={todayClasses}
+      upcomingClasses={upcomingClasses}
+      classesByCourse={classesByCourse}
+      attendanceData={attendanceData}
+      weekClasses={weekClasses}
+      recentStudents={recentStudents}
+      recentObservations={recentObservations}
+    />
+  )
+}
+
+async function loadDashboardData(userId: string, today: Date, tomorrow: Date, weekStart: Date, weekEnd: Date) {
   try {
     const [
       courseCount, groupCount, studentCount,
@@ -29,16 +70,16 @@ export default async function DashboardPage() {
       coursesWithClasses, attendanceRecords,
       activePeriod, weekClasses, recentStudents, recentObservations,
     ] = await Promise.all([
-      prisma.course.count({ where: { userId: user!.id } }),
+      prisma.course.count({ where: { userId } }),
       prisma.group.count({
-        where: { course: { userId: user!.id } },
+        where: { course: { userId } },
       }),
       prisma.student.count({
-        where: { group: { course: { userId: user!.id } } },
+        where: { group: { course: { userId } } },
       }),
       prisma.classSession.findMany({
         where: {
-          group: { course: { userId: user!.id } },
+          group: { course: { userId } },
           date: { gte: today, lt: tomorrow },
         },
         include: { group: { include: { course: true } } },
@@ -46,7 +87,7 @@ export default async function DashboardPage() {
       }),
       prisma.classSession.findMany({
         where: {
-          group: { course: { userId: user!.id } },
+          group: { course: { userId } },
           date: { gte: tomorrow },
           status: 'PLANNED',
         },
@@ -55,7 +96,7 @@ export default async function DashboardPage() {
         take: 5,
       }),
       prisma.course.findMany({
-        where: { userId: user!.id },
+        where: { userId },
         include: {
           groups: {
             include: {
@@ -64,15 +105,16 @@ export default async function DashboardPage() {
           },
         },
       }),
-      prisma.attendanceRecord.findMany({
+      prisma.attendanceRecord.groupBy({
+        by: ['status'],
         where: {
-          classSession: { group: { course: { userId: user!.id } } },
+          classSession: { group: { course: { userId } } },
         },
-        select: { status: true },
+        _count: { _all: true },
       }),
       prisma.academicPeriod.findFirst({
         where: {
-          userId: user!.id,
+          userId,
           startDate: { lte: today },
           endDate: { gte: today },
         },
@@ -80,58 +122,33 @@ export default async function DashboardPage() {
       }),
       prisma.classSession.findMany({
         where: {
-          group: { course: { userId: user!.id } },
+          group: { course: { userId } },
           date: { gte: weekStart, lt: weekEnd },
         },
         include: { group: { include: { course: true } } },
         orderBy: { date: 'asc' },
       }),
       prisma.student.findMany({
-        where: { group: { course: { userId: user!.id } } },
+        where: { group: { course: { userId } } },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: { id: true, firstName: true, lastName: true, createdAt: true, group: { select: { name: true } } },
       }),
       prisma.observation.findMany({
-        where: { userId: user!.id },
+        where: { userId },
         orderBy: { createdAt: 'desc' },
         take: 5,
         select: { id: true, description: true, type: true, createdAt: true, student: { select: { firstName: true, lastName: true } } },
       }),
     ])
 
-    const classesByCourse = coursesWithClasses
-      .map(c => ({
-        name: c.name,
-        classes: c.groups.reduce((sum, g) => sum + g._count.classSessions, 0),
-      }))
-      .filter(c => c.classes > 0)
-      .sort((a, b) => b.classes - a.classes)
-
-    const attendanceCount: Record<string, number> = {}
-    for (const r of attendanceRecords) {
-      attendanceCount[r.status] = (attendanceCount[r.status] || 0) + 1
+    return {
+      courseCount, groupCount, studentCount,
+      todayClasses, upcomingClasses, coursesWithClasses, attendanceRecords,
+      activePeriod, weekClasses, recentStudents, recentObservations,
     }
-    const attendanceData = Object.entries(attendanceCount).map(([name, value]) => ({ name, value }))
-
-    return (
-      <DashboardContent
-        userName={user?.name}
-        activePeriod={activePeriod}
-        courseCount={courseCount}
-        groupCount={groupCount}
-        studentCount={studentCount}
-        todayClasses={todayClasses}
-        upcomingClasses={upcomingClasses}
-        classesByCourse={classesByCourse}
-        attendanceData={attendanceData}
-        weekClasses={weekClasses}
-        recentStudents={recentStudents}
-        recentObservations={recentObservations}
-      />
-    )
   } catch {
-    return <DashboardError />
+    return null
   }
 }
 
