@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { updateSetting } from '@/modules/settings/settings.actions'
@@ -31,12 +30,14 @@ export function AppearanceSection({ currentAccent }: Props) {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [accentColor, setAccentColor] = useState(currentAccent)
-  const [savingColor, setSavingColor] = useState(false)
   const [customColor, setCustomColor] = useState(
     ACCENT_COLORS.some((c) => c.value === currentAccent) ? '' : currentAccent
   )
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   async function handleThemeChange(newTheme: string) {
     setTheme(newTheme)
@@ -46,9 +47,7 @@ export function AppearanceSection({ currentAccent }: Props) {
 
   async function handleAccentChange(color: string) {
     setAccentColor(color)
-    setSavingColor(true)
     await updateSetting('accentColor', color)
-    setSavingColor(false)
     router.refresh()
   }
 

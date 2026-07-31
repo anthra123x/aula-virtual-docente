@@ -1,4 +1,3 @@
-import { requireAuth } from '@/modules/auth/auth.actions'
 import { getPeriods, deletePeriod } from '@/modules/periods/periods.actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +9,6 @@ import Link from 'next/link'
 type PageProps = { searchParams: Promise<{ q?: string }> }
 
 export default async function PeriodsPage({ searchParams }: PageProps) {
-  const user = await requireAuth()
   const { q } = await searchParams
 
   const result = await getPeriods()

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -52,7 +53,14 @@ export function ProfileSection({ user }: Props) {
         <div className="flex items-center gap-4">
           <Avatar className="h-12 w-12">
             {user.avatar ? (
-              <img src={user.avatar} alt="" className="h-full w-full rounded-full object-cover" />
+              <Image
+                src={user.avatar}
+                alt=""
+                width={48}
+                height={48}
+                unoptimized
+                className="h-full w-full rounded-full object-cover"
+              />
             ) : (
               <AvatarFallback className="text-sm">{initials}</AvatarFallback>
             )}

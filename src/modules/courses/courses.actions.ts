@@ -7,6 +7,29 @@ import { requireAuth } from '@/modules/auth/auth.actions'
 import { CreateCourseSchema, UpdateCourseSchema } from '@/lib/validations'
 import { formVal, formatZodError } from '@/lib/zod-utils'
 import { success, failure, type ActionResult } from '@/types'
+import type { Prisma } from '@/generated/prisma/client'
+
+const courseDetailInclude = {
+  groups: {
+    orderBy: { name: 'asc' as const },
+    include: {
+      _count: { select: { students: true, classSessions: true } },
+      students: {
+        orderBy: [{ lastName: 'asc' as const }, { firstName: 'asc' as const }],
+        take: 5,
+      },
+    },
+  },
+} satisfies Prisma.CourseInclude
+
+export type CourseDetail = Prisma.CourseGetPayload<{ include: typeof courseDetailInclude }> & {
+  recentClasses: Prisma.ClassSessionGetPayload<{
+    include: {
+      group: { select: { id: true; name: true } }
+      _count: { select: { attendanceRecords: true } }
+    }
+  }>[]
+}
 
 export async function getCourses() {
   const user = await requireAuth()
@@ -20,23 +43,12 @@ export async function getCourses() {
   return success(courses)
 }
 
-export async function getCourseById(id: string) {
+export async function getCourseById(id: string): Promise<ActionResult<CourseDetail>> {
   const user = await requireAuth()
 
   const course = await prisma.course.findFirst({
     where: { id, userId: user.id },
-    include: {
-      groups: {
-        orderBy: { name: 'asc' },
-        include: {
-          _count: { select: { students: true, classSessions: true } },
-          students: {
-            orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-            take: 5,
-          },
-        },
-      },
-    },
+    include: courseDetailInclude,
   })
 
   if (!course) {

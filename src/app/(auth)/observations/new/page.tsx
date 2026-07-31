@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { createObservation, searchStudents } from '@/modules/observations/observations.actions'
-import { Search, FileText, Users } from 'lucide-react'
+import { Search, Users } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter,
   DialogHeader, DialogTitle,
@@ -26,8 +25,9 @@ type StudentResult = {
 function NewObservationForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const sidFromUrl = searchParams.get('studentId')
   const [error, setError] = useState<string | null>(null)
-  const [studentId, setStudentId] = useState('')
+  const [studentId, setStudentId] = useState(sidFromUrl ?? '')
   const [type, setType] = useState('ACADEMIC')
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<StudentResult[]>([])
@@ -40,20 +40,17 @@ function NewObservationForm() {
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(null)
 
   useEffect(() => {
-    const sid = searchParams.get('studentId')
-    if (sid) {
-      setStudentId(sid)
-      searchStudents('').then((r) => {
-        if (r.success) {
-          const found = r.data.find((s: StudentResult) => s.id === sid)
-          if (found) {
-            setSelectedStudent(found)
-            setSearchQuery(`${found.lastName}, ${found.firstName}`)
-          }
+    if (!sidFromUrl) return
+    searchStudents('').then((r) => {
+      if (r.success) {
+        const found = r.data.find((s: StudentResult) => s.id === sidFromUrl)
+        if (found) {
+          setSelectedStudent(found)
+          setSearchQuery(`${found.lastName}, ${found.firstName}`)
         }
-      })
-    }
-  }, [searchParams])
+      }
+    })
+  }, [sidFromUrl])
 
   const handleSearch = useCallback((value: string) => {
     setSearchQuery(value)

@@ -21,7 +21,6 @@ export default function EditObservationPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [id, setId] = useState('')
-  const [studentId, setStudentId] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState('ACADEMIC')
   const [dirty, setDirty] = useState(false)
@@ -33,7 +32,6 @@ export default function EditObservationPage({ params }: PageProps) {
       setId(p.id)
       const result = await getObservationById(p.id)
       if (result.success) {
-        setStudentId(result.data.studentId)
         setDescription(result.data.description)
         setType(result.data.type || 'ACADEMIC')
       }

@@ -1,5 +1,5 @@
 import { getStudentById, deleteStudent } from '@/modules/students/students.actions'
-import { FileText, Plus, Edit, CalendarDays, GraduationCap, ArrowLeft } from 'lucide-react'
+import { FileText, Plus, Edit, CalendarDays, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

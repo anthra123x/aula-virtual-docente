@@ -45,7 +45,7 @@ export default function EditClassPage({ params }: PageProps) {
       setId(p.id)
       const result = await getClassById(p.id)
       if (result.success) {
-        const cls = result.data as any
+        const cls = result.data
         setCourseName(cls.group.course.name)
         setDate(new Date(cls.date).toISOString().split('T')[0])
         setStartTime(cls.startTime || '')

@@ -13,14 +13,12 @@ function formatMarkdown(text: string): React.ReactNode {
   const lines = text.split('\n')
   const elements: React.ReactNode[] = []
   let listItems: React.ReactNode[] = []
-  let inList = false
 
   function flushList(key: string | number) {
     if (listItems.length > 0) {
       elements.push(<ul key={key} className="list-disc pl-4 my-1 space-y-0.5">{listItems}</ul>)
       listItems = []
     }
-    inList = false
   }
 
   lines.forEach((line, i) => {
@@ -31,7 +29,6 @@ function formatMarkdown(text: string): React.ReactNode {
       flushList(`ul-${i}`)
       elements.push(<h4 key={`h4-${i}`} className="font-medium text-sm mt-1 mb-1">{line.slice(4)}</h4>)
     } else if (line.startsWith('- ') || line.startsWith('* ')) {
-      inList = true
       listItems.push(<li key={`li-${i}`} className="text-sm">{formatInline(line.slice(2))}</li>)
     } else if (line.match(/^\d+\. /)) {
       flushList(`ul-${i}`)
@@ -84,17 +81,20 @@ export function AgentChat() {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('aula-agent-chat')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setMessages(parsed)
-          }
-        } catch { }
+    const raf = requestAnimationFrame(() => {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('aula-agent-chat')
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setMessages(parsed)
+            }
+          } catch { }
+        }
       }
-    }
+    })
+    return () => cancelAnimationFrame(raf)
   }, [])
 
   useEffect(() => {

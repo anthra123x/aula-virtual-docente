@@ -19,10 +19,10 @@ export default async function CourseDetailPage({ params }: PageProps) {
   }
 
   const course = result.data
-  const recentClasses = 'recentClasses' in course ? (course as any).recentClasses : []
+  const recentClasses = course.recentClasses ?? []
 
-  const totalStudents = course.groups.reduce((s: number, g: any) => s + g._count.students, 0)
-  const totalClasses = course.groups.reduce((s: number, g: any) => s + g._count.classSessions, 0)
+  const totalStudents = course.groups.reduce((s: number, g) => s + g._count.students, 0)
+  const totalClasses = course.groups.reduce((s: number, g) => s + g._count.classSessions, 0)
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -99,7 +99,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Grupos</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {course.groups.map((group: any, i: number) => (
+            {course.groups.map((group, i) => (
               <div
                 key={group.id}
                 className="animate-fade-in"
@@ -137,7 +137,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
                     {group.students.length > 0 && (
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground">Estudiantes</p>
-                        {group.students.map((s: any) => (
+                        {group.students.map((s) => (
                           <Link
                             key={s.id}
                             href={`/students/${s.id}`}
@@ -197,7 +197,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
           <h2 className="text-lg font-semibold">Últimas clases</h2>
           <Card className="glass-liquid">
             <CardContent className="p-0 divide-y divide-border/50">
-              {recentClasses.map((cls: any) => (
+              {recentClasses.map((cls) => (
                 <Link
                   key={cls.id}
                   href={`/classes/${cls.id}`}

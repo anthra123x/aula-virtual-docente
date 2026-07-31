@@ -1,5 +1,5 @@
 import { getGroupById, deleteGroup } from '@/modules/groups/groups.actions'
-import { Plus, UserPlus, Edit, FileSpreadsheet, Users, CalendarDays, BookOpen } from 'lucide-react'
+import { Plus, UserPlus, Edit, FileSpreadsheet, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'

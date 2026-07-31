@@ -1,8 +1,7 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { BookOpen, Users, CalendarRange, FileText, RefreshCw, Server } from 'lucide-react'
+import { BookOpen, Users, CalendarRange, FileText, Server } from 'lucide-react'
 import Link from 'next/link'
 
 const QUICK_LINKS = [

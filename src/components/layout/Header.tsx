@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import { logout } from '@/modules/auth/auth.actions'
 import { useSidebar } from './SidebarProvider'
 
@@ -33,7 +32,10 @@ export function Header({ user }: { user: UserData }) {
   const { theme, setTheme } = useTheme()
   const { setOpen } = useSidebar()
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   return (
     <header className="h-14 border-b glass flex items-center justify-between px-3 md:px-6 sticky top-0 z-40">

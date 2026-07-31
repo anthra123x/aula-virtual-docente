@@ -6,6 +6,10 @@ import { requireAuth } from '@/modules/auth/auth.actions'
 import { success, failure } from '@/types'
 import { SETTING_KEYS, SETTING_DEFAULTS, type SettingsMap } from './settings.types'
 
+function isValidSettingKey(key: string): boolean {
+  return Object.values(SETTING_KEYS).includes(key as (typeof SETTING_KEYS)[keyof typeof SETTING_KEYS])
+}
+
 export async function getUserSettings() {
   const user = await requireAuth()
 
@@ -25,7 +29,7 @@ export async function getUserSettings() {
 export async function updateSetting(key: string, value: string) {
   const user = await requireAuth()
 
-  if (!Object.values(SETTING_KEYS).includes(key as any)) {
+  if (!isValidSettingKey(key)) {
     return failure('Clave de configuración inválida')
   }
 
@@ -46,7 +50,7 @@ export async function updateSettings(formData: FormData) {
   const errors: string[] = []
 
   for (const [key, value] of formData.entries()) {
-    if (!Object.values(SETTING_KEYS).includes(key as any)) continue
+    if (!isValidSettingKey(key)) continue
     if (typeof value !== 'string') continue
     entries.push({ key, value })
   }

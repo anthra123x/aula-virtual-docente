@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,19 +10,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 import { login, signup } from '@/modules/auth/auth.actions'
 
+function getInitialError(err: string | null): string | null {
+  if (err === 'oauth_failed') return 'Error al iniciar sesión con Google'
+  if (err === 'no_code') return 'Error de autenticación: código no recibido'
+  if (err && err !== 'google_denied') return err
+  return null
+}
+
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const err = params.get('error')
-    if (err === 'oauth_failed') setError('Error al iniciar sesión con Google')
-    else if (err === 'no_code') setError('Error de autenticación: código no recibido')
-    else if (err && err !== 'google_denied') setError(err)
-  }, [])
+  const searchParams = useSearchParams()
+  const [error, setError] = useState<string | null>(() => getInitialError(searchParams.get('error')))
 
   async function handleSubmit(formData: FormData) {
     setError(null)
