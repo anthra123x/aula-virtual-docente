@@ -33,6 +33,9 @@ export default function NewClassPage({ searchParams }: PageProps) {
   const [activities, setActivities] = useState('')
   const [resources, setResources] = useState('')
   const [homework, setHomework] = useState('')
+  const [methodology, setMethodology] = useState('')
+  const [competences, setCompetences] = useState('')
+  const [evaluationCriteria, setEvaluationCriteria] = useState('')
   const [dirty, setDirty] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
@@ -130,6 +133,9 @@ export default function NewClassPage({ searchParams }: PageProps) {
     if (data.activities) setActivities(data.activities)
     if (data.resources) setResources(data.resources)
     if (data.homework) setHomework(data.homework)
+    if (data.methodology) setMethodology(data.methodology)
+    if (data.competences) setCompetences(data.competences)
+    if (data.evaluationCriteria) setEvaluationCriteria(data.evaluationCriteria)
   }
 
   return (
@@ -145,7 +151,7 @@ export default function NewClassPage({ searchParams }: PageProps) {
           <form ref={formRef} action={handleSubmit} onChange={handleFormChange} className="space-y-6">
             <input type="hidden" name="groupId" value={groupId} />
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <div className="space-y-1 sm:space-y-2">
                 <Label htmlFor="date" className="text-sm">Fecha</Label>
                 <Input id="date" name="date" type="date" required className="text-sm" />
@@ -157,6 +163,10 @@ export default function NewClassPage({ searchParams }: PageProps) {
               <div className="space-y-1 sm:space-y-2">
                 <Label htmlFor="endTime" className="text-sm">Fin</Label>
                 <Input id="endTime" name="endTime" type="time" className="text-sm" />
+              </div>
+              <div className="space-y-1 sm:space-y-2">
+                <Label htmlFor="duration" className="text-sm">Duración (min)</Label>
+                <Input id="duration" name="duration" type="number" min={1} max={600} placeholder="45" className="text-sm" />
               </div>
             </div>
 
@@ -177,10 +187,24 @@ export default function NewClassPage({ searchParams }: PageProps) {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="competences">Competencias / Capacidades</Label>
+                <Textarea id="competences" name="competences" value={competences}
+                  onChange={(e) => setCompetences(e.target.value)}
+                  placeholder="¿Qué capacidades se desarrollan?" rows={2} />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="objectives">Objetivos</Label>
                 <Textarea id="objectives" name="objectives" value={objectives}
                   onChange={(e) => setObjectives(e.target.value)}
                   placeholder="¿Qué aprendizajes esperas lograr?" rows={3} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="methodology">Metodología</Label>
+                <Textarea id="methodology" name="methodology" value={methodology}
+                  onChange={(e) => setMethodology(e.target.value)}
+                  placeholder="Expositiva, colaborativa, proyectos, gamificación..." rows={2} />
               </div>
 
               <div className="space-y-2">
@@ -199,6 +223,13 @@ export default function NewClassPage({ searchParams }: PageProps) {
                 <Textarea id="resources" name="resources" value={resources}
                   onChange={(e) => setResources(e.target.value)}
                   placeholder="Libros, videos, guías, etc." rows={2} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="evaluationCriteria">Criterios de evaluación</Label>
+                <Textarea id="evaluationCriteria" name="evaluationCriteria" value={evaluationCriteria}
+                  onChange={(e) => setEvaluationCriteria(e.target.value)}
+                  placeholder="¿Cómo se evalúa el logro de los objetivos?" rows={2} />
               </div>
 
               <div className="space-y-2">

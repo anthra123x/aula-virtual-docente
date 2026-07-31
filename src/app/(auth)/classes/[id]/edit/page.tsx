@@ -31,10 +31,16 @@ export default function EditClassPage({ params }: PageProps) {
   const [endTime, setEndTime] = useState('')
   const [topic, setTopic] = useState('')
   const [status, setStatus] = useState<string>('PLANNED')
+  const [duration, setDuration] = useState('')
   const [objectives, setObjectives] = useState('')
   const [activities, setActivities] = useState('')
   const [resources, setResources] = useState('')
   const [homework, setHomework] = useState('')
+  const [methodology, setMethodology] = useState('')
+  const [competences, setCompetences] = useState('')
+  const [evaluationCriteria, setEvaluationCriteria] = useState('')
+  const [achievedObjectives, setAchievedObjectives] = useState('')
+  const [observations, setObservations] = useState('')
   const [courseName, setCourseName] = useState('')
   const [dirty, setDirty] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -52,10 +58,16 @@ export default function EditClassPage({ params }: PageProps) {
         setEndTime(cls.endTime || '')
         setTopic(cls.topic)
         setStatus(cls.status || 'PLANNED')
+        setDuration(cls.duration ? String(cls.duration) : '')
         setObjectives(cls.lessonPlan?.objectives || '')
         setActivities(cls.lessonPlan?.activities || '')
         setResources(cls.lessonPlan?.resources || '')
         setHomework(cls.lessonPlan?.homework || '')
+        setMethodology(cls.lessonPlan?.methodology || '')
+        setCompetences(cls.lessonPlan?.competences || '')
+        setEvaluationCriteria(cls.lessonPlan?.evaluationCriteria || '')
+        setAchievedObjectives(cls.lessonPlan?.achievedObjectives || '')
+        setObservations(cls.lessonPlan?.observations || '')
       } else {
         setError(result.error)
       }
@@ -111,6 +123,9 @@ export default function EditClassPage({ params }: PageProps) {
     if (data.activities) setActivities(data.activities)
     if (data.resources) setResources(data.resources)
     if (data.homework) setHomework(data.homework)
+    if (data.methodology) setMethodology(data.methodology)
+    if (data.competences) setCompetences(data.competences)
+    if (data.evaluationCriteria) setEvaluationCriteria(data.evaluationCriteria)
   }
 
   const aiContext = { topic, subject: courseName, grade: '' }
@@ -123,7 +138,7 @@ export default function EditClassPage({ params }: PageProps) {
         </CardHeader>
         <CardContent>
           <form ref={formRef} action={handleSubmit} onChange={handleFormChange} className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Fecha</Label>
                 <Input id="date" name="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -135,6 +150,10 @@ export default function EditClassPage({ params }: PageProps) {
               <div className="space-y-2">
                 <Label htmlFor="endTime">Hora fin</Label>
                 <Input id="endTime" name="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duración (min)</Label>
+                <Input id="duration" name="duration" type="number" min={1} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="45" />
               </div>
             </div>
 
@@ -165,9 +184,19 @@ export default function EditClassPage({ params }: PageProps) {
                   onResult={fillPlan} label="✨ Regenerar plan" />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="competences">Competencias / Capacidades</Label>
+                <Textarea id="competences" name="competences" value={competences}
+                  onChange={(e) => setCompetences(e.target.value)} rows={2} />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="objectives">Objetivos</Label>
                 <Textarea id="objectives" name="objectives" value={objectives}
                   onChange={(e) => setObjectives(e.target.value)} rows={3} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="methodology">Metodología</Label>
+                <Textarea id="methodology" name="methodology" value={methodology}
+                  onChange={(e) => setMethodology(e.target.value)} rows={2} />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -184,11 +213,34 @@ export default function EditClassPage({ params }: PageProps) {
                   onChange={(e) => setResources(e.target.value)} rows={2} />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="evaluationCriteria">Criterios de evaluación</Label>
+                <Textarea id="evaluationCriteria" name="evaluationCriteria" value={evaluationCriteria}
+                  onChange={(e) => setEvaluationCriteria(e.target.value)} rows={2} />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="homework">Tarea / Evaluación</Label>
                 <Textarea id="homework" name="homework" value={homework}
                   onChange={(e) => setHomework(e.target.value)} rows={2} />
               </div>
             </div>
+
+            {(status === 'DONE' || achievedObjectives || observations) && (
+              <div className="space-y-4 border border-border/60 rounded-lg p-4">
+                <h3 className="font-medium text-sm text-muted-foreground">Balance de la clase (después de la clase)</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="achievedObjectives">Logros de la clase</Label>
+                  <Textarea id="achievedObjectives" name="achievedObjectives" value={achievedObjectives}
+                    onChange={(e) => setAchievedObjectives(e.target.value)}
+                    placeholder="¿Qué objetivos se lograron? ¿Qué evidencias observaste?" rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="observations">Observaciones</Label>
+                  <Textarea id="observations" name="observations" value={observations}
+                    onChange={(e) => setObservations(e.target.value)}
+                    placeholder="Reflexiones, dificultades, ajustes para próximas clases..." rows={3} />
+                </div>
+              </div>
+            )}
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 

@@ -72,6 +72,7 @@ export async function getClassById(id: string) {
         },
       },
       lessonPlan: true,
+      period: { select: { id: true, name: true } },
       attendanceRecords: {
         include: { student: { select: { id: true, firstName: true, lastName: true } } },
       },
@@ -82,6 +83,47 @@ export async function getClassById(id: string) {
   return success(cls)
 }
 
+export async function getClassStats(classSessionId: string) {
+  const user = await requireAuth()
+
+  const cls = await prisma.classSession.findFirst({
+    where: { id: classSessionId, group: { course: { userId: user.id } } },
+    select: { id: true, groupId: true, periodId: true, date: true },
+  })
+  if (!cls) return failure('Clase no encontrada')
+
+  const [studentHistory, periodClasses, recentClasses] = await Promise.all([
+    prisma.attendanceRecord.groupBy({
+      by: ['studentId', 'status'],
+      where: {
+        classSession: {
+          groupId: cls.groupId,
+          status: 'DONE',
+        },
+      },
+      _count: { _all: true },
+    }),
+    cls.periodId
+      ? prisma.classSession.groupBy({
+          by: ['status'],
+          where: { groupId: cls.groupId, periodId: cls.periodId },
+          _count: { _all: true },
+        })
+      : Promise.resolve([]),
+    prisma.classSession.findMany({
+      where: { groupId: cls.groupId },
+      orderBy: { date: 'desc' },
+      take: 12,
+      select: {
+        id: true, topic: true, date: true, status: true,
+        _count: { select: { attendanceRecords: true } },
+      },
+    }),
+  ])
+
+  return success({ studentHistory, periodClasses, recentClasses })
+}
+
 export async function createClassWithPlan(formData: FormData): Promise<ActionResult<unknown>> {
   const user = await requireAuth()
 
@@ -89,6 +131,7 @@ export async function createClassWithPlan(formData: FormData): Promise<ActionRes
     date: formVal(formData, 'date'),
     startTime: formData.get('startTime') || null,
     endTime: formData.get('endTime') || null,
+    duration: formData.get('duration') ? Number(formData.get('duration')) : null,
     topic: formVal(formData, 'topic'),
     status: 'PLANNED',
     groupId: formVal(formData, 'groupId'),
@@ -118,6 +161,9 @@ export async function createClassWithPlan(formData: FormData): Promise<ActionRes
           activities: (formData.get('activities') as string) || null,
           resources: (formData.get('resources') as string) || null,
           homework: (formData.get('homework') as string) || null,
+          methodology: (formData.get('methodology') as string) || null,
+          competences: (formData.get('competences') as string) || null,
+          evaluationCriteria: (formData.get('evaluationCriteria') as string) || null,
         },
       },
     },
@@ -143,6 +189,7 @@ export async function updateClass(id: string, formData: FormData): Promise<Actio
     date: formVal(formData, 'date'),
     startTime: formData.get('startTime') || null,
     endTime: formData.get('endTime') || null,
+    duration: formData.get('duration') ? Number(formData.get('duration')) : null,
     topic: formVal(formData, 'topic'),
     status: formVal(formData, 'status'),
     periodId: formData.get('periodId') || null,
@@ -156,6 +203,7 @@ export async function updateClass(id: string, formData: FormData): Promise<Actio
       ...(validated.data.date && { date: new Date(validated.data.date) }),
       ...(validated.data.startTime !== undefined && { startTime: validated.data.startTime }),
       ...(validated.data.endTime !== undefined && { endTime: validated.data.endTime }),
+      ...(validated.data.duration !== undefined && { duration: validated.data.duration }),
       ...(validated.data.topic && { topic: validated.data.topic }),
       ...(validated.data.status && { status: validated.data.status }),
       ...(validated.data.periodId !== undefined && { periodId: validated.data.periodId }),
@@ -182,6 +230,11 @@ export async function updateLessonPlan(classSessionId: string, formData: FormDat
     activities: (formData.get('activities') as string) || null,
     resources: (formData.get('resources') as string) || null,
     homework: (formData.get('homework') as string) || null,
+    methodology: (formData.get('methodology') as string) || null,
+    competences: (formData.get('competences') as string) || null,
+    evaluationCriteria: (formData.get('evaluationCriteria') as string) || null,
+    achievedObjectives: (formData.get('achievedObjectives') as string) || null,
+    observations: (formData.get('observations') as string) || null,
   })
 
   if (!validated.success) {

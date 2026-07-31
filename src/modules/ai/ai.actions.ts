@@ -10,6 +10,9 @@ type PlanSuggestion = {
   activities: string
   resources: string
   homework: string
+  methodology?: string
+  competences?: string
+  evaluationCriteria?: string
 }
 
 export async function generateLessonPlan(formData: FormData): Promise<ActionResult<PlanSuggestion>> {
@@ -44,7 +47,15 @@ Incluye objetivos de aprendizaje claros, actividades detalladas paso a paso, rec
       return failure('La IA no pudo generar un plan válido. Intenta de nuevo.')
     }
 
-    return success(plan)
+    return success({
+      objectives: plan.objectives ?? '',
+      activities: plan.activities ?? '',
+      resources: plan.resources ?? '',
+      homework: plan.homework ?? '',
+      methodology: plan.methodology ?? '',
+      competences: plan.competences ?? '',
+      evaluationCriteria: plan.evaluationCriteria ?? '',
+    })
   } catch {
     return failure('Error al generar el plan. Verifica la API key o intenta de nuevo.')
   }

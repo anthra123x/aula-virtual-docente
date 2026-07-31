@@ -1,9 +1,17 @@
-import { getClassById, deleteClass, updateClassStatus } from '@/modules/classes/classes.actions'
+import { getClassById, deleteClass, updateClassStatus, getClassStats } from '@/modules/classes/classes.actions'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Edit, ClipboardCheck, CheckCircle2, XCircle, Clock, CalendarDays, Users } from 'lucide-react'
+import { AttendanceDistribution } from '@/components/charts/attendance-distribution'
+import { StudentAttendanceTable } from '@/components/classes/student-attendance-table'
+import { PeriodProgress } from '@/components/classes/period-progress'
+import { ClassTimeline } from '@/components/classes/class-timeline'
+import {
+  Edit, ClipboardCheck, CalendarDays, Users,
+  Target, Lightbulb, ListChecks, BookOpen, ClipboardList, FileCheck2,
+  Timer, LineChart,
+} from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -20,18 +28,17 @@ const statusColors: Record<string, string> = {
   CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 }
 
-const attendanceLabels: Record<string, string> = {
-  PRESENT: 'Presente', ABSENT: 'Ausente', LATE: 'Tardanza',
-}
-
-const attendanceIcons: Record<string, typeof CheckCircle2> = {
-  PRESENT: CheckCircle2, ABSENT: XCircle, LATE: Clock,
-}
-
-const attendanceColors: Record<string, string> = {
-  PRESENT: 'text-green-600 dark:text-green-400',
-  ABSENT: 'text-red-600 dark:text-red-400',
-  LATE: 'text-amber-600 dark:text-amber-400',
+function PlanSection({ icon: Icon, title, content }: { icon: typeof Target; title: string; content: string | null | undefined }) {
+  if (!content) return null
+  return (
+    <div className="flex gap-3">
+      <Icon className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+      <div>
+        <h4 className="text-sm font-medium text-muted-foreground mb-1">{title}</h4>
+        <p className="text-sm whitespace-pre-wrap">{content}</p>
+      </div>
+    </div>
+  )
 }
 
 export default async function ClassDetailPage({ params }: PageProps) {
@@ -40,9 +47,36 @@ export default async function ClassDetailPage({ params }: PageProps) {
   if (!result.success) { notFound() }
   const cls = result.data
 
+  const statsResult = await getClassStats(id)
+  const stats = statsResult.success ? statsResult.data : null
+
   const presentCount = cls.attendanceRecords.filter((r) => r.status === 'PRESENT').length
   const absentCount = cls.attendanceRecords.filter((r) => r.status === 'ABSENT').length
   const lateCount = cls.attendanceRecords.filter((r) => r.status === 'LATE').length
+  const recordedCount = cls.attendanceRecords.length
+  const registered = cls.group.students.length
+
+  const historyByStudent = new Map<string, { present: number; absent: number; late: number }>()
+  for (const row of stats?.studentHistory ?? []) {
+    const entry = historyByStudent.get(row.studentId) ?? { present: 0, absent: 0, late: 0 }
+    if (row.status === 'PRESENT') entry.present += row._count._all
+    else if (row.status === 'ABSENT') entry.absent += row._count._all
+    else if (row.status === 'LATE') entry.late += row._count._all
+    historyByStudent.set(row.studentId, entry)
+  }
+
+  const attendanceData = [
+    { name: 'PRESENT', value: presentCount },
+    { name: 'LATE', value: lateCount },
+    { name: 'ABSENT', value: absentCount },
+  ]
+
+  const periodDone = stats?.periodClasses.find((s) => s.status === 'DONE')?._count._all ?? 0
+  const periodPlanned = stats?.periodClasses.find((s) => s.status === 'PLANNED')?._count._all ?? 0
+  const periodName = cls.period?.name
+
+  const isDone = cls.status === 'DONE'
+  const hasAnalysis = isDone || recordedCount > 0
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -63,10 +97,16 @@ export default async function ClassDetailPage({ params }: PageProps) {
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold">{cls.topic}</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground flex items-center gap-1.5 flex-wrap">
+            <CalendarDays className="h-3.5 w-3.5" />
             {format(new Date(cls.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             {cls.startTime && ` · ${cls.startTime}`}
             {cls.endTime && ` - ${cls.endTime}`}
+            {cls.duration && (
+              <span className="inline-flex items-center gap-1">
+                <Timer className="h-3.5 w-3.5" /> {cls.duration} min
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -91,18 +131,18 @@ export default async function ClassDetailPage({ params }: PageProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{cls.group.students.length}</p>
+            <p className="text-2xl font-bold">{registered}</p>
           </CardContent>
         </Card>
         <Card className="glass-liquid">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" />
+              <ClipboardCheck className="h-3.5 w-3.5" />
               Registrados
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{cls.attendanceRecords.length}</p>
+            <p className="text-2xl font-bold">{recordedCount}/{registered}</p>
           </CardContent>
         </Card>
         <Card className="glass-liquid">
@@ -126,35 +166,21 @@ export default async function ClassDetailPage({ params }: PageProps) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="glass-liquid">
           <CardHeader>
-            <CardTitle>Plan de clase</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              Plan de clase
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {cls.lessonPlan ? (
-              <div className="space-y-4">
-                {cls.lessonPlan.objectives && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Objetivos</h4>
-                    <p className="text-sm whitespace-pre-wrap">{cls.lessonPlan.objectives}</p>
-                  </div>
-                )}
-                {cls.lessonPlan.activities && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Actividades</h4>
-                    <p className="text-sm whitespace-pre-wrap">{cls.lessonPlan.activities}</p>
-                  </div>
-                )}
-                {cls.lessonPlan.resources && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Recursos</h4>
-                    <p className="text-sm whitespace-pre-wrap">{cls.lessonPlan.resources}</p>
-                  </div>
-                )}
-                {cls.lessonPlan.homework && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Tarea / Evaluación</h4>
-                    <p className="text-sm whitespace-pre-wrap">{cls.lessonPlan.homework}</p>
-                  </div>
-                )}
+              <div className="space-y-5">
+                <PlanSection icon={Target} title="Competencias / Capacidades" content={cls.lessonPlan.competences} />
+                <PlanSection icon={BookOpen} title="Objetivos de aprendizaje" content={cls.lessonPlan.objectives} />
+                <PlanSection icon={Lightbulb} title="Metodología" content={cls.lessonPlan.methodology} />
+                <PlanSection icon={ClipboardList} title="Actividades" content={cls.lessonPlan.activities} />
+                <PlanSection icon={BookOpen} title="Recursos / Materiales" content={cls.lessonPlan.resources} />
+                <PlanSection icon={FileCheck2} title="Criterios de evaluación" content={cls.lessonPlan.evaluationCriteria} />
+                <PlanSection icon={ClipboardCheck} title="Tarea / Evaluación" content={cls.lessonPlan.homework} />
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">Sin plan de clase registrado</p>
@@ -162,42 +188,110 @@ export default async function ClassDetailPage({ params }: PageProps) {
           </CardContent>
         </Card>
 
-        <Card className="glass-liquid">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Asistencia ({cls.attendanceRecords.length}/{cls.group.students.length})</span>
+        <div className="space-y-6">
+          <Card className="glass-liquid">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                <Users className="h-4 w-4" />
+                Asistencia de la clase ({recordedCount}/{registered})
+              </CardTitle>
               <Button render={<Link href={`/classes/${id}/attendance`} />} variant="outline" size="xs">
                 <ClipboardCheck className="h-3 w-3 mr-1" /> Tomar
               </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {cls.group.students.map((student, i) => {
-                const record = cls.attendanceRecords.find((r) => r.studentId === student.id)
-                const Icon = record ? attendanceIcons[record.status] : null
-                return (
-                  <div
-                    key={student.id}
-                    className="flex items-center justify-between text-sm py-1.5 animate-fade-in"
-                    style={{ animationDelay: `${i * 0.02}s` }}
-                  >
-                    <span>{student.lastName}, {student.firstName}</span>
-                    {record ? (
-                      <span className={`flex items-center gap-1 ${attendanceColors[record.status]}`}>
-                        {Icon && <Icon className="h-4 w-4" />}
-                        {attendanceLabels[record.status]}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">Sin registro</span>
-                    )}
+            </CardHeader>
+            <CardContent>
+              <AttendanceDistribution data={attendanceData} />
+            </CardContent>
+          </Card>
+
+          {isDone && (
+            <Card className="glass-liquid">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <LineChart className="h-4 w-4" />
+                  Balance de la clase
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {cls.lessonPlan?.achievedObjectives && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+                      <Target className="h-3.5 w-3.5" /> Logros de la clase
+                    </h4>
+                    <p className="text-sm whitespace-pre-wrap">{cls.lessonPlan.achievedObjectives}</p>
                   </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+                {cls.lessonPlan?.observations && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-1.5">
+                      <ClipboardList className="h-3.5 w-3.5" /> Observaciones
+                    </h4>
+                    <p className="text-sm whitespace-pre-wrap">{cls.lessonPlan.observations}</p>
+                  </div>
+                )}
+                {!cls.lessonPlan?.achievedObjectives && !cls.lessonPlan?.observations && (
+                  <p className="text-sm text-muted-foreground">
+                    Aún no registras el balance de la clase.{' '}
+                    <Link href={`/classes/${id}/edit`} className="text-primary hover:underline">
+                      Añadir logros y observaciones
+                    </Link>
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
+
+      {hasAnalysis && (
+        <div className="space-y-6">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <LineChart className="h-5 w-5" />
+            Análisis de la clase
+          </h2>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="glass-liquid">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  Historial de asistencia por estudiante
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <StudentAttendanceTable
+                  students={cls.group.students.map((student) => {
+                    const record = cls.attendanceRecords.find((r) => r.studentId === student.id)
+                    return {
+                      id: student.id,
+                      firstName: student.firstName,
+                      lastName: student.lastName,
+                      currentStatus: record?.status ?? null,
+                      history: historyByStudent.get(student.id) ?? { present: 0, absent: 0, late: 0 },
+                    }
+                  })}
+                />
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              <PeriodProgress doneCount={periodDone} plannedCount={periodPlanned} periodName={periodName} />
+
+              <Card className="glass-liquid">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-1">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Últimas clases del grupo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ClassTimeline classes={stats?.recentClasses ?? []} currentId={id} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
 
       {cls.status === 'PLANNED' && (
         <div className="flex gap-2 justify-center">

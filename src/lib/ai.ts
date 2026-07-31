@@ -34,13 +34,19 @@ Debes devolver SOLO un objeto JSON válido con esta estructura exacta, sin texto
   "objectives": "objetivos de aprendizaje",
   "activities": "actividades paso a paso",
   "resources": "recursos y materiales",
-  "homework": "tarea o evaluación"
+  "homework": "tarea o evaluación",
+  "methodology": "metodología y estrategias didácticas",
+  "competences": "competencias o capacidades a desarrollar",
+  "evaluationCriteria": "criterios de evaluación"
 }
 
 Los objetivos deben ser claros y medibles.
-Las actividades deben estar numeradas y detalladas.
+Las actividades deben estar numeradas y detalladas, con tiempo estimado por actividad.
 Los recursos deben ser concretos y disponibles.
-La tarea debe reforzar lo aprendido.`,
+La tarea debe reforzar lo aprendido.
+La metodología debe describir el enfoque (expositivo, colaborativo, proyectos, gamificación, etc.) y cómo se aplicará.
+Las competencias deben conectarse con el tema propuesto.
+Los criterios de evaluación deben ser observables y verificables.`,
 
   activities: `Eres un docente experto en diseño de actividades pedagógicas.
 Genera entre 3 y 5 actividades numeradas para una clase específica.

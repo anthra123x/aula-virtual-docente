@@ -96,6 +96,7 @@ model ClassSession {
   date      DateTime
   startTime String?
   endTime   String?
+  duration  Int?
   topic     String
   status    ClassStatus @default(PLANNED)
   groupId   String
@@ -115,14 +116,19 @@ model ClassSession {
 }
 
 model LessonPlan {
-  id             String  @id @default(cuid())
-  objectives     String?
-  activities     String?
-  resources      String?
-  homework       String?
-  classSessionId String  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                  String  @id @default(cuid())
+  objectives          String?
+  activities          String?
+  resources           String?
+  homework            String?
+  methodology         String?
+  competences         String?
+  evaluationCriteria  String?
+  achievedObjectives  String?
+  observations        String?
+  classSessionId      String  @unique
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
 
