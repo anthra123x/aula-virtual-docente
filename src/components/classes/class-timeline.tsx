@@ -6,18 +6,20 @@ type TimelineClass = {
   id: string
   topic: string
   date: Date
-  status: 'PLANNED' | 'DONE' | 'CANCELLED'
+  status: 'PLANNED' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED'
   _count: { attendanceRecords: number }
 }
 
 const dotColors: Record<string, string> = {
   DONE: 'bg-green-500',
+  IN_PROGRESS: 'bg-amber-500',
   PLANNED: 'bg-blue-500',
   CANCELLED: 'bg-red-400',
 }
 
 const labelColors: Record<string, string> = {
   DONE: 'text-green-600 dark:text-green-400',
+  IN_PROGRESS: 'text-amber-600 dark:text-amber-400',
   PLANNED: 'text-blue-600 dark:text-blue-400',
   CANCELLED: 'text-red-500 dark:text-red-400',
 }
@@ -34,7 +36,7 @@ export function ClassTimeline({ classes, currentId }: { classes: TimelineClass[]
                 {c.topic}
               </p>
               <span className={`text-xs shrink-0 ${labelColors[c.status]}`}>
-                {c.status === 'DONE' ? 'Realizada' : c.status === 'CANCELLED' ? 'Cancelada' : 'Planificada'}
+                {c.status === 'DONE' ? 'Realizada' : c.status === 'CANCELLED' ? 'Cancelada' : c.status === 'IN_PROGRESS' ? 'En curso' : 'Planificada'}
               </span>
             </div>
             <p className="text-xs text-muted-foreground">

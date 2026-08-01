@@ -11,6 +11,7 @@ import { es } from 'date-fns/locale'
 
 const statusLabels: Record<string, string> = {
   PLANNED: 'Planificada',
+  IN_PROGRESS: 'En curso',
   DONE: 'Realizada',
   CANCELLED: 'Cancelada',
 }
@@ -34,7 +35,7 @@ export default async function ClassesPage({
     : allClasses
 
   const totalRealized = filtered.filter((c) => c.status === 'DONE').length
-  const totalPlanned = filtered.filter((c) => c.status === 'PLANNED').length
+  const totalPlanned = filtered.filter((c) => c.status === 'PLANNED' || c.status === 'IN_PROGRESS').length
 
   return (
     <div className="space-y-6 animate-fade-in-up">

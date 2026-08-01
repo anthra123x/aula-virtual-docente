@@ -20,7 +20,7 @@ export default async function PeriodDetailPage({ params }: PageProps) {
 
   const doneCount = period.classSessions.filter((s) => s.status === 'DONE').length
   const cancelledCount = period.classSessions.filter((s) => s.status === 'CANCELLED').length
-  const plannedCount = period.classSessions.filter((s) => s.status === 'PLANNED').length
+  const plannedCount = period.classSessions.filter((s) => s.status === 'PLANNED' || s.status === 'IN_PROGRESS').length
 
   return (
     <div className="space-y-6 animate-fade-in-up">

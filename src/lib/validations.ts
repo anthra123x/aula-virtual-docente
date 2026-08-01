@@ -2,7 +2,14 @@ import { z } from 'zod'
 
 export const AttendanceStatusSchema = z.enum(['PRESENT', 'ABSENT', 'LATE'])
 export const ObservationTypeSchema = z.enum(['ACADEMIC', 'BEHAVIOR'])
-export const ClassStatusSchema = z.enum(['PLANNED', 'DONE', 'CANCELLED'])
+export const ClassStatusSchema = z.enum(['PLANNED', 'IN_PROGRESS', 'DONE', 'CANCELLED'])
+export const ClassNoteStageSchema = z.enum(['INICIO', 'DESARROLLO', 'CIERRE', 'INCIDENCIA'])
+export const ClassMomentSchema = z.enum(['INICIO', 'DESARROLLO', 'CIERRE'])
+
+export const AddClassNoteSchema = z.object({
+  stage: ClassNoteStageSchema,
+  note: z.string().min(1, 'Escribe una nota').max(1000, 'La nota es demasiado larga'),
+})
 
 export const CreateCourseSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),

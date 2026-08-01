@@ -171,6 +171,7 @@ export default function EditClassPage({ params }: PageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="PLANNED">Planificada</SelectItem>
+                  <SelectItem value="IN_PROGRESS">En curso</SelectItem>
                   <SelectItem value="DONE">Realizada</SelectItem>
                   <SelectItem value="CANCELLED">Cancelada</SelectItem>
                 </SelectContent>

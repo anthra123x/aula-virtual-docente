@@ -20,6 +20,7 @@ enum ObservationType {
 
 enum ClassStatus {
   PLANNED
+  IN_PROGRESS
   DONE
   CANCELLED
 }
@@ -99,6 +100,9 @@ model ClassSession {
   duration  Int?
   topic     String
   status    ClassStatus @default(PLANNED)
+  startedAt DateTime?
+  endedAt   DateTime?
+  momentsCompleted String[] @default([])
   groupId   String
   periodId  String?
   createdAt DateTime    @default(now())
@@ -108,11 +112,25 @@ model ClassSession {
   period            AcademicPeriod?     @relation(fields: [periodId], references: [id])
   lessonPlan        LessonPlan?
   attendanceRecords AttendanceRecord[]
+  notes             ClassNote[]
 
   @@index([groupId])
   @@index([date])
   @@index([periodId])
   @@map("class_sessions")
+}
+
+model ClassNote {
+  id             String      @id @default(cuid())
+  classSessionId String
+  stage          String      @default("DESARROLLO")
+  note           String
+  createdAt      DateTime    @default(now())
+
+  classSession ClassSession @relation(fields: [classSessionId], references: [id], onDelete: Cascade)
+
+  @@index([classSessionId])
+  @@map("class_notes")
 }
 
 model LessonPlan {

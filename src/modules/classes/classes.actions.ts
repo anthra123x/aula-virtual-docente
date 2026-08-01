@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAuth } from '@/modules/auth/auth.actions'
-import { CreateClassSessionSchema, UpdateClassSessionSchema, UpdateLessonPlanSchema } from '@/lib/validations'
+import { CreateClassSessionSchema, UpdateClassSessionSchema, UpdateLessonPlanSchema, AddClassNoteSchema } from '@/lib/validations'
 import { formVal, formatZodError } from '@/lib/zod-utils'
 import { success, failure, type ActionResult } from '@/types'
 
@@ -76,6 +76,7 @@ export async function getClassById(id: string) {
       attendanceRecords: {
         include: { student: { select: { id: true, firstName: true, lastName: true } } },
       },
+      notes: { orderBy: { createdAt: 'desc' } },
     },
   })
 
@@ -252,7 +253,7 @@ export async function updateLessonPlan(classSessionId: string, formData: FormDat
 }
 
 export async function updateClassStatus(
-  id: string, status: 'PLANNED' | 'DONE' | 'CANCELLED',
+  id: string, status: 'PLANNED' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED',
 ): Promise<ActionResult<void>> {
   const user = await requireAuth()
 
@@ -261,10 +262,76 @@ export async function updateClassStatus(
   })
   if (!cls) return failure('Clase no encontrada')
 
-  await prisma.classSession.update({ where: { id }, data: { status } })
+  const data: { status: typeof status; startedAt?: Date; endedAt?: Date } = { status }
+  if (status === 'IN_PROGRESS' && !cls.startedAt) data.startedAt = new Date()
+  if (status === 'DONE') data.endedAt = new Date()
+
+  await prisma.classSession.update({ where: { id }, data })
   revalidatePath(`/classes/${id}`)
   revalidatePath('/classes')
   revalidatePath('/dashboard')
+  return success(undefined)
+}
+
+export async function addClassNote(
+  classSessionId: string,
+  formData: FormData,
+): Promise<ActionResult<void>> {
+  const user = await requireAuth()
+
+  const cls = await prisma.classSession.findFirst({
+    where: { id: classSessionId, group: { course: { userId: user.id } } },
+    select: { id: true },
+  })
+  if (!cls) return failure('Clase no encontrada')
+
+  const validated = AddClassNoteSchema.safeParse({
+    stage: formData.get('stage'),
+    note: formData.get('note'),
+  })
+  if (!validated.success) return failure(formatZodError(validated.error))
+
+  await prisma.classNote.create({
+    data: { classSessionId, stage: validated.data.stage, note: validated.data.note.trim() },
+  })
+
+  revalidatePath(`/classes/${classSessionId}`)
+  return success(undefined)
+}
+
+export async function deleteClassNote(noteId: string, classSessionId: string) {
+  const user = await requireAuth()
+
+  const note = await prisma.classNote.findFirst({
+    where: { id: noteId, classSession: { group: { course: { userId: user.id } } } },
+    select: { id: true },
+  })
+  if (!note) return failure('Nota no encontrada')
+
+  await prisma.classNote.delete({ where: { id: noteId } })
+  revalidatePath(`/classes/${classSessionId}`)
+  return success(undefined)
+}
+
+export async function toggleClassMoment(classSessionId: string, moment: 'INICIO' | 'DESARROLLO' | 'CIERRE') {
+  const user = await requireAuth()
+
+  const cls = await prisma.classSession.findFirst({
+    where: { id: classSessionId, group: { course: { userId: user.id } } },
+    select: { id: true, momentsCompleted: true },
+  })
+  if (!cls) return failure('Clase no encontrada')
+
+  const completed = cls.momentsCompleted.includes(moment)
+    ? cls.momentsCompleted.filter((m) => m !== moment)
+    : [...cls.momentsCompleted, moment]
+
+  await prisma.classSession.update({
+    where: { id: classSessionId },
+    data: { momentsCompleted: completed },
+  })
+
+  revalidatePath(`/classes/${classSessionId}`)
   return success(undefined)
 }
 
