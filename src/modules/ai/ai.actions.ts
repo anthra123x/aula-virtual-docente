@@ -1,6 +1,6 @@
 'use server'
 
-import { callAI, SYSTEM_PROMPTS } from '@/lib/ai'
+import { callAI, parseAIJson, SYSTEM_PROMPTS } from '@/lib/ai'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { rateLimit } from '@/lib/rate-limit'
 import { success, failure, type ActionResult } from '@/types'
@@ -40,10 +40,9 @@ Incluye objetivos de aprendizaje claros, actividades detalladas paso a paso, rec
 
   try {
     const text = await callAI({ system: SYSTEM_PROMPTS.lessonPlan, prompt })
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const plan = JSON.parse(cleaned) as PlanSuggestion
+    const plan = parseAIJson<PlanSuggestion>(text)
 
-    if (!plan.objectives && !plan.activities && !plan.resources && !plan.homework) {
+    if (!plan || (!plan.objectives && !plan.activities && !plan.resources && !plan.homework)) {
       return failure('La IA no pudo generar un plan válido. Intenta de nuevo.')
     }
 
@@ -82,9 +81,8 @@ export async function generateActivities(formData: FormData): Promise<ActionResu
 
   try {
     const text = await callAI({ system: SYSTEM_PROMPTS.activities, prompt })
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const result = JSON.parse(cleaned)
-    const activities = Array.isArray(result.activities) ? result.activities.join('\n') : text
+    const result = parseAIJson<{ activities?: string[] }>(text)
+    const activities = result?.activities ? result.activities.join('\n') : text
     return success(activities)
   } catch {
     return failure('Error al generar actividades. Intenta de nuevo.')
@@ -113,20 +111,19 @@ ${evalType === 'questions' ? 'Genera 5 preguntas con sus respuestas.' : 'Genera 
 
   try {
     const text = await callAI({ system: SYSTEM_PROMPTS.evaluation, prompt })
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
 
     if (evalType === 'questions') {
-      const parsed = JSON.parse(cleaned)
-      const items = parsed.questions || parsed.preguntas || []
-      const questions = Array.isArray(items)
-        ? items.map((q: { question?: string; pregunta?: string; answer?: string; respuesta?: string }) =>
+      const parsed = parseAIJson<{ questions?: Array<{ question?: string; pregunta?: string; answer?: string; respuesta?: string }> }>(text)
+      const items = parsed?.questions || []
+      const questions = items.length > 0
+        ? items.map(q =>
             `${q.question || q.pregunta}\n${q.answer || q.respuesta}`
           ).join('\n\n')
         : text
       return success(questions)
     }
 
-    return success(cleaned)
+    return success(text)
   } catch {
     return failure('Error al generar evaluación. Intenta de nuevo.')
   }
@@ -154,8 +151,8 @@ Aplica la instrucción y devuelve el plan mejorado.`
 
   try {
     const text = await callAI({ system: SYSTEM_PROMPTS.optimize, prompt })
-    const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-    const plan = JSON.parse(cleaned) as PlanSuggestion
+    const plan = parseAIJson<PlanSuggestion>(text)
+    if (!plan) return failure('Error al optimizar el plan. Intenta de nuevo.')
     return success(plan)
   } catch {
     return failure('Error al optimizar el plan. Intenta de nuevo.')

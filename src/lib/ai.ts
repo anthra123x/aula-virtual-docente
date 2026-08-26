@@ -27,6 +27,32 @@ export async function callAI({
   return text
 }
 
+export function parseAIJson<T = unknown>(text: string): T | null {
+  const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+
+  const outerBrace = cleaned.indexOf('{')
+  const endBrace = cleaned.lastIndexOf('}')
+  if (outerBrace !== -1 && endBrace > outerBrace) {
+    try {
+      return JSON.parse(cleaned.slice(outerBrace, endBrace + 1)) as T
+    } catch { /* continue */ }
+  }
+
+  try {
+    return JSON.parse(cleaned) as T
+  } catch { /* continue */ }
+
+  const outerBracket = cleaned.indexOf('[')
+  const endBracket = cleaned.lastIndexOf(']')
+  if (outerBracket !== -1 && endBracket > outerBracket) {
+    try {
+      return JSON.parse(cleaned.slice(outerBracket, endBracket + 1)) as T
+    } catch { /* continue */ }
+  }
+
+  return null
+}
+
 export const SYSTEM_PROMPTS = {
   lessonPlan: `Eres un docente experto en planificación de clases. Tu tarea es generar planes de clase completos en español.
 Debes devolver SOLO un objeto JSON válido con esta estructura exacta, sin texto adicional antes ni después:

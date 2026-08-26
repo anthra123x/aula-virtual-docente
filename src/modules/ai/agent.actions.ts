@@ -2,7 +2,7 @@
 
 import { generateText, isStepCount, tool } from 'ai'
 import { z } from 'zod'
-import { zen, AI_MODEL, callAI, SYSTEM_PROMPTS } from '@/lib/ai'
+import { zen, AI_MODEL, callAI, parseAIJson, SYSTEM_PROMPTS } from '@/lib/ai'
 import { requireAuth } from '@/modules/auth/auth.actions'
 import { prisma } from '@/lib/prisma'
 
@@ -106,16 +106,19 @@ REGLAS:
 - Grado/Nivel: ${grade || 'No especificado'}
 - Tema: ${topic}`
           const text = await callAI({ system: SYSTEM_PROMPTS.lessonPlan, prompt })
-          const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
-          const outerBrace = cleaned.indexOf('{')
-          const endBrace = cleaned.lastIndexOf('}')
-          const json = outerBrace !== -1 && endBrace > outerBrace ? cleaned.slice(outerBrace, endBrace + 1) : cleaned
-          const plan = JSON.parse(json)
-          return {
-            objectives: plan.objectives || '',
-            activities: plan.activities || '',
-            resources: plan.resources || '',
-            homework: plan.homework || '',
+          const plan = parseAIJson<{
+            objectives?: string
+            activities?: string
+            resources?: string
+            homework?: string
+          }>(text)
+          if (plan) {
+            return {
+              objectives: plan.objectives || '',
+              activities: plan.activities || '',
+              resources: plan.resources || '',
+              homework: plan.homework || '',
+            }
           }
         } catch {
           return {

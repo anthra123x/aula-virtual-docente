@@ -13,7 +13,7 @@ export async function getCurrentUser() {
     return null
   }
 
-  if (!user?.email) return devFallback()
+  if (!user?.email) return null
 
   try {
     const dbUser = await prisma.user.findUnique({
@@ -26,9 +26,4 @@ export async function getCurrentUser() {
     console.error('Error loading DB user:', error)
     return null
   }
-}
-
-function devFallback() {
-  if (process.env.NODE_ENV !== 'development') return null
-  return { id: 'dev-user', email: 'dev@local.dev', name: 'Usuario de Prueba', avatar: null }
 }
