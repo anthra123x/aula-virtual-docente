@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const name = formData.get('name') as string
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -20,5 +20,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
-  return NextResponse.json({ success: true })
+  const hasSession = !!data.session
+  return NextResponse.json({ success: true, hasSession })
 }

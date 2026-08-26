@@ -52,7 +52,13 @@ export default function LoginPage() {
       setLoading(false)
       return
     }
-    window.location.href = '/dashboard'
+    if (data.hasSession) {
+      window.location.href = '/dashboard'
+    } else {
+      setError('Cuenta creada. Revisa tu correo para confirmar tu cuenta antes de iniciar sesión.')
+      setMode('login')
+      setLoading(false)
+    }
   }
 
   return (
