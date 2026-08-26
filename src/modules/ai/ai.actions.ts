@@ -24,7 +24,6 @@ export async function generateLessonPlan(formData: FormData): Promise<ActionResu
   const topic = formData.get('topic') as string
   const subject = formData.get('subject') as string || ''
   const grade = formData.get('grade') as string || ''
-  const duration = formData.get('duration') as string || ''
 
   if (!topic || topic.length < 2) {
     return failure('El tema debe tener al menos 2 caracteres')
@@ -34,7 +33,6 @@ export async function generateLessonPlan(formData: FormData): Promise<ActionResu
 - Materia: ${subject || 'No especificada'}
 - Grado/Nivel: ${grade || 'No especificado'}
 - Tema: ${topic}
-- Duración: ${duration || 'No especificada'}
 
 Incluye objetivos de aprendizaje claros, actividades detalladas paso a paso, recursos necesarios, y tarea/evaluación.`
 

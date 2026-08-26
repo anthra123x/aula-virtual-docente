@@ -41,7 +41,6 @@ export const CreateClassSessionSchema = z.object({
   date: z.string().min(1, 'La fecha es requerida'),
   startTime: z.string().optional().nullable(),
   endTime: z.string().optional().nullable(),
-  duration: z.coerce.number().int().min(1, 'La duración debe ser al menos 1 minuto').max(600, 'La duración máxima es 600 minutos').optional().nullable(),
   topic: z.string().min(2, 'El tema debe tener al menos 2 caracteres'),
   status: ClassStatusSchema.default('PLANNED'),
   groupId: z.string(),

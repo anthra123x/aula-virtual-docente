@@ -3,18 +3,18 @@ import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { DeleteButton } from '@/components/ui/delete-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+
 import { AttendanceDistribution } from '@/components/charts/attendance-distribution'
 import { StudentAttendanceTable } from '@/components/classes/student-attendance-table'
 import { PeriodProgress } from '@/components/classes/period-progress'
 import { ClassTimeline } from '@/components/classes/class-timeline'
-import { ClassTimer } from '@/components/classes/class-timer'
+
 import { ClassNotes } from '@/components/classes/class-notes'
 import { ClassMoments } from '@/components/classes/class-moments'
 import {
   Edit, ClipboardCheck, CalendarDays, Users,
   Target, Lightbulb, ListChecks, BookOpen, ClipboardList, FileCheck2,
-  Timer, LineChart, Play, Flag, BookMarked, NotebookPen,
+  LineChart, Play, Flag, NotebookPen,
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -32,12 +32,6 @@ const statusColors: Record<string, string> = {
   DONE: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
   CANCELLED: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
 }
-
-const timeStructure = [
-  { label: 'Iniciación', pct: 10 },
-  { label: 'Desarrollo', pct: 70 },
-  { label: 'Cierre', pct: 20 },
-]
 
 function PlanSection({ icon: Icon, title, content }: { icon: typeof Target; title: string; content: string | null | undefined }) {
   if (!content) return null
@@ -117,21 +111,6 @@ export default async function ClassDetailPage({ params }: PageProps) {
             {format(new Date(cls.date), "EEEE d 'de' MMMM, yyyy", { locale: es })}
             {cls.startTime && ` · ${cls.startTime}`}
             {cls.endTime && ` - ${cls.endTime}`}
-            {cls.duration && (
-              <span className="inline-flex items-center gap-1">
-                <Timer className="h-3.5 w-3.5" /> {cls.duration} min
-              </span>
-            )}
-            {cls.startedAt && (
-              <span className="inline-flex items-center gap-1">
-                · Iniciada {format(new Date(cls.startedAt), 'HH:mm')}
-              </span>
-            )}
-            {cls.endedAt && (
-              <span className="inline-flex items-center gap-1">
-                · Terminada {format(new Date(cls.endedAt), 'HH:mm')}
-              </span>
-            )}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -206,28 +185,6 @@ export default async function ClassDetailPage({ params }: PageProps) {
                 <PlanSection icon={BookOpen} title="Recursos / Materiales" content={cls.lessonPlan.resources} />
                 <PlanSection icon={FileCheck2} title="Criterios de evaluación" content={cls.lessonPlan.evaluationCriteria} />
                 <PlanSection icon={ClipboardCheck} title="Tarea / Evaluación" content={cls.lessonPlan.homework} />
-
-                {cls.duration && (
-                  <div className="rounded-lg border border-border/60 p-3 space-y-2">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-                      <BookMarked className="h-3.5 w-3.5" /> Estructura temporal sugerida
-                    </h4>
-                    {timeStructure.map((t) => {
-                      const minutes = Math.round((cls.duration ?? 0) * (t.pct / 100))
-                      return (
-                        <div key={t.label} className="space-y-1">
-                          <div className="flex justify-between text-xs">
-                            <span className="font-medium">{t.label}</span>
-                            <span className="text-muted-foreground tabular-nums">
-                              {minutes} min · {t.pct}%
-                            </span>
-                          </div>
-                          <Progress value={t.pct} className="h-1.5 [&>div]:bg-primary/60" />
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">Sin plan de clase registrado</p>
@@ -250,20 +207,6 @@ export default async function ClassDetailPage({ params }: PageProps) {
               <AttendanceDistribution data={attendanceData} />
             </CardContent>
           </Card>
-
-          {isInProgress && (
-            <Card className="glass-liquid">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Timer className="h-4 w-4" />
-                  Clase en curso
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ClassTimer startedAt={cls.startedAt?.toISOString() ?? new Date().toISOString()} duration={cls.duration} />
-              </CardContent>
-            </Card>
-          )}
 
           {showDevelopment && (
             <Card className="glass-liquid">

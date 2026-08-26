@@ -151,7 +151,7 @@ export default function NewClassPage({ searchParams }: PageProps) {
           <form ref={formRef} action={handleSubmit} onChange={handleFormChange} className="space-y-6">
             <input type="hidden" name="groupId" value={groupId} />
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
               <div className="space-y-1 sm:space-y-2">
                 <Label htmlFor="date" className="text-sm">Fecha</Label>
                 <Input id="date" name="date" type="date" required className="text-sm" />
@@ -163,10 +163,6 @@ export default function NewClassPage({ searchParams }: PageProps) {
               <div className="space-y-1 sm:space-y-2">
                 <Label htmlFor="endTime" className="text-sm">Fin</Label>
                 <Input id="endTime" name="endTime" type="time" className="text-sm" />
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <Label htmlFor="duration" className="text-sm">Duración (min)</Label>
-                <Input id="duration" name="duration" type="number" min={1} max={600} placeholder="45" className="text-sm" />
               </div>
             </div>
 

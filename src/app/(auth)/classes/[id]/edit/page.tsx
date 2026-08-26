@@ -31,7 +31,6 @@ export default function EditClassPage({ params }: PageProps) {
   const [endTime, setEndTime] = useState('')
   const [topic, setTopic] = useState('')
   const [status, setStatus] = useState<string>('PLANNED')
-  const [duration, setDuration] = useState('')
   const [objectives, setObjectives] = useState('')
   const [activities, setActivities] = useState('')
   const [resources, setResources] = useState('')
@@ -58,7 +57,6 @@ export default function EditClassPage({ params }: PageProps) {
         setEndTime(cls.endTime || '')
         setTopic(cls.topic)
         setStatus(cls.status || 'PLANNED')
-        setDuration(cls.duration ? String(cls.duration) : '')
         setObjectives(cls.lessonPlan?.objectives || '')
         setActivities(cls.lessonPlan?.activities || '')
         setResources(cls.lessonPlan?.resources || '')
@@ -138,7 +136,7 @@ export default function EditClassPage({ params }: PageProps) {
         </CardHeader>
         <CardContent>
           <form ref={formRef} action={handleSubmit} onChange={handleFormChange} className="space-y-6">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Fecha</Label>
                 <Input id="date" name="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
@@ -150,10 +148,6 @@ export default function EditClassPage({ params }: PageProps) {
               <div className="space-y-2">
                 <Label htmlFor="endTime">Hora fin</Label>
                 <Input id="endTime" name="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duración (min)</Label>
-                <Input id="duration" name="duration" type="number" min={1} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="45" />
               </div>
             </div>
 
