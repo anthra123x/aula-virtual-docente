@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { login, signup } from '@/modules/auth/auth.actions'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
@@ -26,12 +25,32 @@ export default function LoginPage() {
       }
     }
 
-    const result = mode === 'login' ? await login(formData) : await signup(formData)
-
-    if (result && !result.success) {
-      setError(result.error)
+    if (mode === 'login') {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Error al iniciar sesión')
+        setLoading(false)
+        return
+      }
+      window.location.href = '/dashboard'
+      return
     }
-    setLoading(false)
+
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      body: formData,
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error || 'Error al crear cuenta')
+      setLoading(false)
+      return
+    }
+    window.location.href = '/dashboard'
   }
 
   return (
